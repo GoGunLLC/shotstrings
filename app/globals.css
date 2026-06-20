@@ -1,0 +1,36 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  background: #050608;
+  color: #e6e7e9;
+  font-family: var(--font-archivo), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.mono {
+  font-family: var(--font-mono), "Space Mono", monospace;
+}
+
+input::placeholder {
+  color: #5f656e;
+}
+
+::selection {
+  background: #2fb8a0;
+  color: #06100e;
+}
+
+@keyframes ssblink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
