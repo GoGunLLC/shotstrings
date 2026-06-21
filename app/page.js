@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Chart from "chart.js/auto";
-import { GUNS, BY_ID } from "./data";
+import { getShotStrings } from "./lib/shotStrings";
 
 const MONO = "var(--font-mono), 'Space Mono', monospace";
 const TEAL = "#2fb8a0";
@@ -56,6 +56,22 @@ export default function Home() {
   const [selected, setSelected] = useState([]);
   const [metric, setMetric] = useState("vel");
   const [query, setQuery] = useState("");
+  const [guns, setGuns] = useState([]);
+
+  useEffect(() => {
+    let alive = true;
+    getShotStrings().then(({ guns }) => {
+      if (alive) setGuns(guns);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const byId = useMemo(
+    () => Object.fromEntries(guns.map((g) => [g.id, g])),
+    [guns]
+  );
 
   const canvasRef = useRef(null);
   const chartRef = useRef(null);
@@ -65,16 +81,18 @@ export default function Home() {
 
   const matches = useMemo(() => {
     if (!q) return [];
-    return GUNS.filter(
-      (g) =>
-        !selected.includes(g.id) &&
-        (g.brand + " " + g.model + " " + g.cal).toLowerCase().includes(q)
-    ).slice(0, 6);
-  }, [q, selected]);
+    return guns
+      .filter(
+        (g) =>
+          !selected.includes(g.id) &&
+          (g.brand + " " + g.model + " " + g.cal).toLowerCase().includes(q)
+      )
+      .slice(0, 6);
+  }, [q, selected, guns]);
 
   const selGuns = useMemo(
-    () => selected.map((id) => BY_ID[id]).filter(Boolean),
-    [selected]
+    () => selected.map((id) => byId[id]).filter(Boolean),
+    [selected, byId]
   );
 
   function pick(id) {
@@ -143,22 +161,14 @@ export default function Home() {
   useEffect(() => () => chartRef.current && chartRef.current.destroy(), []);
 
   return (
-    <div style={{ maxWidth: 1120, margin: "0 auto", padding: "30px 20px 70px" }}>
-      <div
-        style={{
-          background: "#0a0b0d",
-          border: "1px solid #1a1d22",
-          borderRadius: 12,
-          overflow: "hidden",
-        }}
-      >
+    <div style={{ minHeight: "100vh" }}>
         {/* nav */}
         <div
           style={{
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            padding: "18px 28px",
+            padding: "18px 40px",
             borderBottom: "1px solid #181b1f",
           }}
         >
@@ -192,32 +202,39 @@ export default function Home() {
           </div>
           <div
             className="mono"
+            title="The shot strings shown are fabricated sample data for testing. Real, video-verified data is coming soon."
             style={{
-              fontSize: 10,
+              fontSize: 9.5,
               letterSpacing: 1,
-              color: "#5e7170",
+              color: "#e0a93f",
+              background: "rgba(224,169,63,0.08)",
+              border: "1px solid rgba(224,169,63,0.35)",
+              borderRadius: 3,
+              padding: "5px 10px",
               display: "flex",
               alignItems: "center",
               gap: 7,
+              cursor: "default",
+              textTransform: "uppercase",
             }}
           >
             <span
               style={{
-                width: 7,
-                height: 7,
+                width: 6,
+                height: 6,
                 borderRadius: "50%",
-                background: TEAL,
+                background: "#e0a93f",
                 animation: "ssblink 1.8s infinite",
                 display: "inline-block",
               }}
             />
-            CHRONO · CALIBRATED
+            Demo data · sample, not real yet
           </div>
         </div>
 
-        <div style={{ padding: "0 28px 30px" }}>
+        <div style={{ padding: "10px 40px 60px" }}>
           {/* hero */}
-          <div style={{ padding: "60px 0 26px" }}>
+          <div style={{ padding: "60px 0 26px", textAlign: active ? "left" : "center" }}>
             {!active && (
               <div style={{ marginBottom: 6 }}>
                 <div
@@ -228,6 +245,7 @@ export default function Home() {
                     color: "#5e7170",
                     display: "flex",
                     alignItems: "center",
+                    justifyContent: "center",
                     gap: 9,
                   }}
                 >
@@ -253,7 +271,7 @@ export default function Home() {
                     color: "#868d96",
                     fontSize: 15,
                     lineHeight: 1.6,
-                    margin: "18px 0 22px",
+                    margin: "18px auto 22px",
                   }}
                 >
                   Real chronograph data for every airgun — average, spread and standard deviation.
@@ -263,7 +281,7 @@ export default function Home() {
             )}
 
             {/* search */}
-            <div style={{ position: "relative", maxWidth: 580 }}>
+            <div style={{ position: "relative", maxWidth: 700, margin: active ? "0" : "0 auto", textAlign: "left" }}>
               <div
                 style={{
                   display: "flex",
@@ -377,6 +395,7 @@ export default function Home() {
                 marginTop: 16,
                 display: "flex",
                 alignItems: "center",
+                justifyContent: active ? "flex-start" : "center",
                 gap: 10,
                 flexWrap: "wrap",
               }}
@@ -387,7 +406,7 @@ export default function Home() {
               >
                 ON RECORD
               </span>
-              {GUNS.slice(0, 4).map((t) => (
+              {guns.slice(0, 4).map((t) => (
                 <span
                   key={t.id}
                   onClick={() => pick(t.id)}
@@ -591,7 +610,6 @@ export default function Home() {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }
