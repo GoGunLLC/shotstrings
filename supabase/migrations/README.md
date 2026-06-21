@@ -12,3 +12,4 @@ Migrations applied to the ShotStrings database (project `kvjobezpudugjjjcokee`).
 | Migration | Summary |
 |---|---|
 | `mvp_09_catalog_insert_no_self_approve` | Catalog INSERT policies: non-admins can only insert `pending` rows; admins may self-approve. |
+| `mvp_10_admin_catalog_merge` | Admin-only atomic merge functions (`admin_merge_brand/model/projectile/moderator`) for the catalog Manage tab: repoint children onto a target record, then delete the source, in one transaction. |

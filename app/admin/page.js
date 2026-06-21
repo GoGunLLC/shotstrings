@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import SiteNav from "../components/SiteNav";
 import ShotsEditor from "../components/ShotsEditor";
+import ManageCatalog from "../components/ManageCatalog";
 import {
   getMyProfile,
   getCatalog,
@@ -95,6 +96,7 @@ export default function AdminPage() {
           {[
             ["review", "Review submissions"],
             ["catalog", "Quick-add catalog"],
+            ["manage", "Manage catalog"],
           ].map(([k, label]) => (
             <button
               key={k}
@@ -120,8 +122,10 @@ export default function AdminPage() {
 
       {tab === "review" ? (
         <ReviewQueue catalog={catalog} />
-      ) : (
+      ) : tab === "catalog" ? (
         <CatalogAdmin catalog={catalog} onChanged={reloadCatalog} />
+      ) : (
+        <ManageCatalog />
       )}
     </Shell>
   );

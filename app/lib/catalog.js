@@ -465,3 +465,251 @@ export function addProjectile({ brandId, name, type, caliberId, weightGrains, he
     "id, name"
   );
 }
+
+// ===========================================================================
+// CATALOG MANAGE (admin) — review dependencies, merge duplicates, delete safe.
+// ===========================================================================
+
+// Tally helper: count occurrences of `key` across `rows`.
+function tally(rows, key) {
+  const m = new Map();
+  for (const r of rows || []) {
+    const k = r[key];
+    if (k == null) continue;
+    m.set(k, (m.get(k) || 0) + 1);
+  }
+  return m;
+}
+
+// Everything the Manage tab needs: every catalog record (any status, admins
+// see all via RLS) annotated with how many things point at it. Counts are
+// computed client-side from a few small fetches — the catalog tables are tiny.
+//
+// For each record we expose:
+//   deps        — direct child counts keyed by table (what blocks a delete and
+//                 what moves on a merge)
+//   shotStrings — how many shot strings ultimately reference this record
+//                 (rolled up through variants/models where relevant)
+//   blocking    — true if anything points at it (delete is unsafe)
+export async function getManageData() {
+  const supabase = getSupabaseClient();
+
+  const [brands, models, variants, projectiles, moderators, calibers, tanks, strings] =
+    await Promise.all([
+      supabase.from("brands").select("id, name, slug, status").order("name"),
+      supabase.from("airgun_models").select("id, name, brand_id, status").order("name"),
+      supabase
+        .from("airgun_variants")
+        .select("id, model_id, caliber_id, barrel_length_in, status")
+        .order("id"),
+      supabase
+        .from("projectiles")
+        .select("id, name, brand_id, caliber_id, weight_grains, status")
+        .order("name"),
+      supabase.from("moderators").select("id, name, brand_id, status").order("name"),
+      supabase.from("calibers").select("id, name").order("name"),
+      supabase.from("airgun_tanks").select("id, variant_id"),
+      supabase
+        .from("shot_strings")
+        .select("id, airgun_variant_id, projectile_id, moderator_id, caliber_id"),
+    ]);
+
+  const firstErr = [
+    brands, models, variants, projectiles, moderators, calibers, tanks, strings,
+  ].find((r) => r.error);
+  if (firstErr) return { error: firstErr.error.message };
+
+  const B = brands.data || [];
+  const M = models.data || [];
+  const V = variants.data || [];
+  const P = projectiles.data || [];
+  const MOD = moderators.data || [];
+  const C = calibers.data || [];
+  const T = tanks.data || [];
+  const S = strings.data || [];
+
+  // Direct child tallies.
+  const modelsByBrand = tally(M, "brand_id");
+  const projByBrand = tally(P, "brand_id");
+  const modByBrand = tally(MOD, "brand_id");
+  const variantsByModel = tally(V, "model_id");
+  const variantsByCaliber = tally(V, "caliber_id");
+  const projByCaliber = tally(P, "caliber_id");
+  const tanksByVariant = tally(T, "variant_id");
+  const ssByVariant = tally(S, "airgun_variant_id");
+  const ssByProjectile = tally(S, "projectile_id");
+  const ssByModerator = tally(S, "moderator_id");
+  const ssByCaliber = tally(S, "caliber_id");
+
+  // Roll shot strings up to model and brand through the variant chain.
+  const variantToModel = new Map(V.map((v) => [v.id, v.model_id]));
+  const modelToBrand = new Map(M.map((m) => [m.id, m.brand_id]));
+  const ssByModel = new Map();
+  const ssByBrand = new Map();
+  for (const s of S) {
+    const modelId = variantToModel.get(s.airgun_variant_id);
+    if (modelId != null) {
+      ssByModel.set(modelId, (ssByModel.get(modelId) || 0) + 1);
+      const brandId = modelToBrand.get(modelId);
+      if (brandId != null) ssByBrand.set(brandId, (ssByBrand.get(brandId) || 0) + 1);
+    }
+  }
+
+  const n = (map, id) => map.get(id) || 0;
+
+  const decoratedBrands = B.map((b) => {
+    const deps = {
+      models: n(modelsByBrand, b.id),
+      projectiles: n(projByBrand, b.id),
+      moderators: n(modByBrand, b.id),
+    };
+    return {
+      ...b,
+      kind: "brand",
+      mergeable: true,
+      label: b.name,
+      sub: b.slug,
+      deps,
+      shotStrings: n(ssByBrand, b.id),
+      blocking: deps.models + deps.projectiles + deps.moderators > 0,
+    };
+  });
+
+  const brandName = new Map(B.map((b) => [b.id, b.name]));
+  const caliberName = new Map(C.map((c) => [c.id, c.name]));
+  const modelName = new Map(M.map((m) => [m.id, m.name]));
+
+  const decoratedModels = M.map((m) => {
+    const deps = { variants: n(variantsByModel, m.id) };
+    return {
+      ...m,
+      kind: "model",
+      mergeable: true,
+      label: m.name,
+      sub: brandName.get(m.brand_id) || "—",
+      deps,
+      shotStrings: n(ssByModel, m.id),
+      blocking: deps.variants > 0,
+    };
+  });
+
+  const decoratedVariants = V.map((v) => {
+    const deps = { tanks: n(tanksByVariant, v.id), shotStrings: n(ssByVariant, v.id) };
+    return {
+      ...v,
+      kind: "variant",
+      mergeable: false, // tanks + per-tank pressures make merge ambiguous (v2)
+      label: `${modelName.get(v.model_id) || "?"} · ${caliberName.get(v.caliber_id) || "?"}${
+        v.barrel_length_in ? ` · ${v.barrel_length_in}"` : ""
+      }`,
+      sub: null,
+      deps,
+      shotStrings: n(ssByVariant, v.id),
+      blocking: deps.tanks + deps.shotStrings > 0,
+    };
+  });
+
+  const decoratedProjectiles = P.map((p) => {
+    const deps = { shotStrings: n(ssByProjectile, p.id) };
+    return {
+      ...p,
+      kind: "projectile",
+      mergeable: true,
+      label: `${p.name} · ${p.weight_grains} gr`,
+      sub: [brandName.get(p.brand_id), caliberName.get(p.caliber_id)].filter(Boolean).join(" · "),
+      deps,
+      shotStrings: deps.shotStrings,
+      blocking: deps.shotStrings > 0,
+    };
+  });
+
+  const decoratedModerators = MOD.map((m) => {
+    const deps = { shotStrings: n(ssByModerator, m.id) };
+    return {
+      ...m,
+      kind: "moderator",
+      mergeable: true,
+      label: m.name,
+      sub: brandName.get(m.brand_id) || "—",
+      deps,
+      shotStrings: deps.shotStrings,
+      blocking: deps.shotStrings > 0,
+    };
+  });
+
+  const decoratedCalibers = C.map((c) => {
+    const deps = {
+      variants: n(variantsByCaliber, c.id),
+      projectiles: n(projByCaliber, c.id),
+      shotStrings: n(ssByCaliber, c.id),
+    };
+    return {
+      ...c,
+      kind: "caliber",
+      mergeable: false, // reference data — delete only when nothing uses it
+      label: c.name,
+      sub: null,
+      deps,
+      shotStrings: deps.shotStrings,
+      blocking: deps.variants + deps.projectiles + deps.shotStrings > 0,
+    };
+  });
+
+  return {
+    brands: decoratedBrands,
+    models: decoratedModels,
+    variants: decoratedVariants,
+    projectiles: decoratedProjectiles,
+    moderators: decoratedModerators,
+    calibers: decoratedCalibers,
+  };
+}
+
+// Table name per record kind — used by the safe-delete helper.
+const TABLE_BY_KIND = {
+  brand: "brands",
+  model: "airgun_models",
+  variant: "airgun_variants",
+  projectile: "projectiles",
+  moderator: "moderators",
+  caliber: "calibers",
+};
+
+// Merge `sourceId` into `targetId` via the atomic admin_merge_* function.
+// Returns { data: <counts moved>, error }.
+const MERGE_FN_BY_KIND = {
+  brand: "admin_merge_brand",
+  model: "admin_merge_model",
+  projectile: "admin_merge_projectile",
+  moderator: "admin_merge_moderator",
+};
+
+export async function mergeCatalogRecord(kind, sourceId, targetId) {
+  const fn = MERGE_FN_BY_KIND[kind];
+  if (!fn) return { error: `Merge isn't supported for ${kind}.` };
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc(fn, {
+    p_source: Number(sourceId),
+    p_target: Number(targetId),
+  });
+  return { data, error: error?.message };
+}
+
+// Delete a catalog record. The FK constraints are NO ACTION, so the database
+// refuses to delete anything still referenced — this only ever succeeds when
+// the record is truly unused. The UI also gates the button on a zero
+// dependency count, so this is a second line of defense.
+export async function deleteCatalogRecord(kind, id) {
+  const table = TABLE_BY_KIND[kind];
+  if (!table) return { error: `Unknown record type ${kind}.` };
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from(table).delete().eq("id", id);
+  if (error) {
+    // 23503 = foreign_key_violation: something still points at this row.
+    if (error.code === "23503") {
+      return { error: "Still referenced by other records — reassign or merge first." };
+    }
+    return { error: error.message };
+  }
+  return {};
+}
