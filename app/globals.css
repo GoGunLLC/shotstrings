@@ -20,6 +20,10 @@ input::placeholder {
   color: #5f656e;
 }
 
+.airgun-search {
+  font-size: 13px;
+}
+
 ::selection {
   background: #2fb8a0;
   color: #06100e;
@@ -40,5 +44,10 @@ input::placeholder {
   }
   .nav-hamburger {
     display: block;
+  }
+  /* iOS Safari auto-zooms when a focused input's font-size is < 16px.
+     Bump the search field to 16px on mobile to prevent that zoom. */
+  .airgun-search {
+    font-size: 16px;
   }
 }

@@ -61,6 +61,15 @@ export default function Home() {
   const [metric, setMetric] = useState("vel");
   const [query, setQuery] = useState("");
   const [guns, setGuns] = useState([]);
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 760px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -186,7 +195,6 @@ export default function Home() {
                       gap: 9,
                     }}
                   >
-                    <span style={{ width: 7, height: 7, background: TEAL, display: "inline-block" }} />
                     MEASURED, NOT CLAIMED — {guns.length.toLocaleString()} SHOT STRING{guns.length === 1 ? "" : "S"} ON RECORD
                   </div>
                 )}
@@ -245,46 +253,18 @@ export default function Home() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && matches.length) pick(matches[0].id);
                   }}
-                  placeholder="Search an airgun — FX Impact, Red Wolf…"
+                  placeholder={isMobile ? "Search here" : "Search an airgun — FX Impact, Red Wolf…"}
                   autoComplete="off"
-                  className="mono"
+                  className="mono airgun-search"
                   style={{
                     flex: 1,
                     background: "transparent",
                     border: "none",
                     outline: "none",
                     color: "#e6e7e9",
-                    fontSize: 13,
                     padding: "15px 0",
                   }}
                 />
-                <div
-                  className="mono"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 6,
-                    color: "#5e7170",
-                    fontSize: 11,
-                    letterSpacing: 1,
-                    padding: "14px 18px",
-                    whiteSpace: "nowrap",
-                    pointerEvents: "none",
-                    userSelect: "none",
-                  }}
-                >
-                  <span
-                    style={{
-                      border: "1px solid #2a2f35",
-                      borderRadius: 3,
-                      padding: "2px 6px",
-                      color: "#aeb4bc",
-                    }}
-                  >
-                    ↵
-                  </span>
-                  ENTER TO READ
-                </div>
               </div>
 
               {/* dropdown */}
