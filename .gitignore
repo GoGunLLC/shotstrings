@@ -17,3 +17,6 @@ dist/
 
 # local tooling
 .claude/
+
+# stray build log
+build.out

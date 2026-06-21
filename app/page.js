@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Chart from "chart.js/auto";
 import { getShotStrings } from "./lib/shotStrings";
-import { getSupabaseClient } from "./lib/supabase";
+import SiteNav from "./components/SiteNav";
 
 const MONO = "var(--font-mono), 'Space Mono', monospace";
 const TEAL = "#2fb8a0";
@@ -58,7 +58,6 @@ export default function Home() {
   const [metric, setMetric] = useState("vel");
   const [query, setQuery] = useState("");
   const [guns, setGuns] = useState([]);
-  const [session, setSession] = useState(null);
 
   useEffect(() => {
     let alive = true;
@@ -69,27 +68,6 @@ export default function Home() {
       alive = false;
     };
   }, []);
-
-  // Auth session: load once, then track sign-in/out.
-  useEffect(() => {
-    const supabase = getSupabaseClient();
-    supabase.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) =>
-      setSession(s)
-    );
-    return () => sub.subscription.unsubscribe();
-  }, []);
-
-  function signInWithGoogle() {
-    getSupabaseClient().auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
-    });
-  }
-
-  function signOut() {
-    getSupabaseClient().auth.signOut();
-  }
 
   const byId = useMemo(
     () => Object.fromEntries(guns.map((g) => [g.id, g])),
@@ -185,139 +163,7 @@ export default function Home() {
 
   return (
     <div style={{ minHeight: "100vh" }}>
-        {/* nav */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            padding: "18px 40px",
-            borderBottom: "1px solid #181b1f",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-            <div
-              style={{
-                width: 10,
-                height: 10,
-                borderRadius: "50%",
-                background: TEAL,
-                boxShadow:
-                  "0 0 7px 1px rgba(47,184,160,.85), inset 0 0 2px rgba(255,255,255,.5)",
-              }}
-            />
-            <div style={{ fontWeight: 800, letterSpacing: 5, fontSize: 14 }}>SHOTSTRINGS</div>
-          </div>
-          <div
-            className="mono"
-            style={{
-              display: "flex",
-              gap: 28,
-              fontSize: 11,
-              letterSpacing: 1,
-              color: "#7b8089",
-              textTransform: "uppercase",
-            }}
-          >
-            <span style={{ cursor: "pointer" }}>Index</span>
-            <span style={{ cursor: "pointer" }}>Submit</span>
-            <span style={{ cursor: "pointer" }}>Method</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-            <div
-              className="mono"
-              title="The shot strings shown are fabricated sample data for testing. Real, video-verified data is coming soon."
-              style={{
-                fontSize: 9.5,
-                letterSpacing: 1,
-                color: "#e0a93f",
-                background: "rgba(224,169,63,0.08)",
-                border: "1px solid rgba(224,169,63,0.35)",
-                borderRadius: 3,
-                padding: "5px 10px",
-                display: "flex",
-                alignItems: "center",
-                gap: 7,
-                cursor: "default",
-                textTransform: "uppercase",
-              }}
-            >
-              <span
-                style={{
-                  width: 6,
-                  height: 6,
-                  borderRadius: "50%",
-                  background: "#e0a93f",
-                  animation: "ssblink 1.8s infinite",
-                  display: "inline-block",
-                }}
-              />
-              Demo data · sample, not real yet
-            </div>
-
-            {session ? (
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <div
-                  title={session.user.email}
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: "50%",
-                    background: TEAL,
-                    color: "#06100e",
-                    fontSize: 12,
-                    fontWeight: 800,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {(session.user.email || "?").charAt(0)}
-                </div>
-                <span
-                  onClick={signOut}
-                  className="mono"
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: 1,
-                    color: "#7b8089",
-                    cursor: "pointer",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  Sign out
-                </span>
-              </div>
-            ) : (
-              <button
-                onClick={signInWithGoogle}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 9,
-                  background: "#fff",
-                  color: "#1f2328",
-                  border: "none",
-                  borderRadius: 4,
-                  padding: "8px 14px",
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                }}
-              >
-                <svg width="15" height="15" viewBox="0 0 18 18" aria-hidden="true">
-                  <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z" />
-                  <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z" />
-                  <path fill="#FBBC05" d="M3.97 10.72a5.4 5.4 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z" />
-                  <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.47.9 11.43 0 9 0A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z" />
-                </svg>
-                Sign in with Google
-              </button>
-            )}
-          </div>
-        </div>
+        <SiteNav active="index" />
 
         <div style={{ padding: "10px 40px 60px" }}>
           {/* hero */}
