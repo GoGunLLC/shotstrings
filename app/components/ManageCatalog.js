@@ -115,7 +115,7 @@ export default function ManageCatalog() {
               border: "1px solid #23272d",
               borderRadius: 4,
               padding: "7px 13px",
-              fontSize: 10.5,
+              fontSize: 11,
               letterSpacing: 0.5,
               cursor: "pointer",
               textTransform: "uppercase",
@@ -248,7 +248,7 @@ function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
         </div>
         <span
           className="mono"
-          style={{ fontSize: 9.5, letterSpacing: 0.5, textTransform: "uppercase", color: statusColor, whiteSpace: "nowrap" }}
+          style={{ fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase", color: statusColor, whiteSpace: "nowrap" }}
         >
           {rec.status || ""}
         </span>
@@ -257,7 +257,7 @@ function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
       {open && (
         <div style={{ padding: "14px 16px", borderTop: "1px solid #141619", background: "#080a0c" }}>
           {/* impact preview */}
-          <div className="mono" style={{ fontSize: 10, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 8 }}>
+          <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 8 }}>
             Impact
           </div>
           <div style={{ fontSize: 13, color: "#cdd2d8", marginBottom: 16 }}>
@@ -271,7 +271,7 @@ function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
           {/* merge */}
           {rec.mergeable && targets.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <label className="mono" style={{ display: "block", fontSize: 9.5, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
+              <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
                 Merge into
               </label>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -294,7 +294,7 @@ function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
                     border: `1px solid ${TEAL}`,
                     borderRadius: 4,
                     padding: "6px 16px",
-                    fontSize: 10.5,
+                    fontSize: 11,
                     fontWeight: 700,
                     letterSpacing: 0.5,
                     cursor: busy || !mergeTarget ? "default" : "pointer",
@@ -321,7 +321,7 @@ function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
                 border: `1px solid ${rec.blocking ? "#23272d" : RED}`,
                 borderRadius: 4,
                 padding: "6px 16px",
-                fontSize: 10.5,
+                fontSize: 11,
                 fontWeight: 700,
                 letterSpacing: 0.5,
                 cursor: busy || rec.blocking ? "default" : "pointer",
@@ -331,7 +331,7 @@ function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
               Delete
             </button>
             {rec.blocking && (
-              <span className="mono" style={{ fontSize: 10.5, color: "#5e7170", marginLeft: 12 }}>
+              <span className="mono" style={{ fontSize: 11, color: "#5e7170", marginLeft: 12 }}>
                 Linked records must be merged or removed first.
               </span>
             )}

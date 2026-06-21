@@ -108,7 +108,7 @@ export default function DashboardPage() {
           }}
         >
           <div>
-            <div className="mono" style={{ fontSize: 10, letterSpacing: 2, color: TEAL, marginBottom: 8 }}>
+            <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: TEAL, marginBottom: 8 }}>
               CREATOR DASHBOARD
             </div>
             <h1 style={{ fontSize: 36, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1 }}>
@@ -197,7 +197,7 @@ export default function DashboardPage() {
                     </a>
                   )}
                 </div>
-                <span className="mono" style={{ fontSize: 10, color: "#5e7170", letterSpacing: 0.5, whiteSpace: "nowrap" }}>
+                <span className="mono" style={{ fontSize: 11, color: "#5e7170", letterSpacing: 0.5, whiteSpace: "nowrap" }}>
                   {v.strings.length} STRING{v.strings.length === 1 ? "" : "S"}
                 </span>
               </div>
@@ -229,7 +229,7 @@ export default function DashboardPage() {
                     <span
                       className="mono"
                       style={{
-                        fontSize: 9.5,
+                        fontSize: 11,
                         letterSpacing: 0.5,
                         textTransform: "uppercase",
                         color: st.color,
@@ -255,7 +255,7 @@ export default function DashboardPage() {
 function Stat({ label, value, accent }) {
   return (
     <div style={{ background: "#0e1013", border: "1px solid #181b1f", borderRadius: 8, padding: "18px 20px" }}>
-      <div className="mono" style={{ fontSize: 10, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase" }}>
+      <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase" }}>
         {label}
       </div>
       <div style={{ fontSize: 30, fontWeight: 800, marginTop: 6, color: accent || "#e6e7e9" }}>{value}</div>

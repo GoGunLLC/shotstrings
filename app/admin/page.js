@@ -87,7 +87,7 @@ export default function AdminPage() {
     <Shell>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
-          <div className="mono" style={{ fontSize: 10, letterSpacing: 2, color: AMBER, marginBottom: 8 }}>
+          <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: AMBER, marginBottom: 8 }}>
             ADMIN CONSOLE
           </div>
           <h1 style={{ fontSize: 36, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1 }}>Moderation</h1>
@@ -177,7 +177,7 @@ function ReviewQueue({ catalog }) {
               border: "1px solid #23272d",
               borderRadius: 4,
               padding: "7px 13px",
-              fontSize: 10.5,
+              fontSize: 11,
               letterSpacing: 0.5,
               cursor: "pointer",
               textTransform: "uppercase",
@@ -228,7 +228,7 @@ function ReviewQueue({ catalog }) {
                 <span
                   className="mono"
                   style={{
-                    fontSize: 9.5,
+                    fontSize: 11,
                     letterSpacing: 0.5,
                     textTransform: "uppercase",
                     color: st.color,
@@ -299,7 +299,7 @@ function ActBtn({ color, onClick, children }) {
         border: `1px solid ${color}`,
         borderRadius: 4,
         padding: "6px 13px",
-        fontSize: 10.5,
+        fontSize: 11,
         fontWeight: 700,
         letterSpacing: 0.5,
         cursor: "pointer",
@@ -451,7 +451,7 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
         {reg && <L label="Reg setpoint (psi)"><input type="number" value={setpoint} onChange={(e) => setSetpoint(e.target.value)} style={field} /></L>}
       </Grid>
 
-      <div className="mono" style={{ fontSize: 10, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "8px 0 8px" }}>
+      <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "8px 0 8px" }}>
         Shots
       </div>
       <ShotsEditor shots={shots} onChange={setShots} />
@@ -643,7 +643,7 @@ function VariantForm({ catalog, onChanged }) {
           <L label="Barrel length (in)"><input type="number" value={barrel} onChange={(e) => setBarrel(e.target.value)} placeholder="optional" style={field} /></L>
           <L label="Reg pressure (psi)"><input type="number" value={regPsi} onChange={(e) => setRegPsi(e.target.value)} placeholder="optional" style={field} /></L>
         </Grid>
-        <div className="mono" style={{ fontSize: 10, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase", margin: "4px 0 10px" }}>
+        <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase", margin: "4px 0 10px" }}>
           Tank (volume needed for air-efficiency math)
         </div>
         <Grid>
@@ -745,7 +745,7 @@ function Grid({ children }) {
 function L({ label, children }) {
   return (
     <div>
-      <label className="mono" style={{ display: "block", fontSize: 9.5, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
+      <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
         {label}
       </label>
       {children}

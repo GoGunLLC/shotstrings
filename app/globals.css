@@ -24,3 +24,21 @@ input::placeholder {
   background: #2fb8a0;
   color: #06100e;
 }
+
+/* Responsive nav: show the inline links on wide screens, collapse to a
+   hamburger on narrow ones. */
+.nav-hamburger {
+  display: none;
+}
+
+@media (max-width: 760px) {
+  .site-nav {
+    padding: 16px 20px;
+  }
+  .nav-desktop {
+    display: none !important;
+  }
+  .nav-hamburger {
+    display: block;
+  }
+}

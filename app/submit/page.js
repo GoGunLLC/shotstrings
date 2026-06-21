@@ -321,7 +321,7 @@ export default function SubmitPage() {
     <div style={{ minHeight: "100vh" }}>
       <SiteNav active="submit" />
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "44px 24px 90px" }}>
-        <div className="mono" style={{ fontSize: 10, letterSpacing: 2, color: TEAL, marginBottom: 8 }}>
+        <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: TEAL, marginBottom: 8 }}>
           NEW SUBMISSION
         </div>
         <h1 style={{ fontSize: 38, fontWeight: 800, letterSpacing: -1.4, lineHeight: 1 }}>
@@ -535,7 +535,7 @@ export default function SubmitPage() {
                     {tanks.length > 1 && (
                       <div
                         className="mono"
-                        style={{ fontSize: 10, letterSpacing: 1, color: "#7b8089", marginBottom: 6, textTransform: "uppercase" }}
+                        style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", marginBottom: 6, textTransform: "uppercase" }}
                       >
                         {t.role} tank{t.volume_cc ? ` · ${t.volume_cc} cc` : ""}
                       </div>
@@ -591,7 +591,7 @@ export default function SubmitPage() {
             <button type="submit" disabled={busy} style={{ ...primaryBtn, opacity: busy ? 0.6 : 1 }}>
               {busy ? "Submitting…" : "Submit for review"}
             </button>
-            <span className="mono" style={{ fontSize: 10, color: "#5e7170", letterSpacing: 0.5 }}>
+            <span className="mono" style={{ fontSize: 11, color: "#5e7170", letterSpacing: 0.5 }}>
               REVIEWED BEFORE GOING PUBLIC
             </span>
           </div>
@@ -616,7 +616,7 @@ function Section({ n, title, hint, children }) {
       }}
     >
       <div>
-        <div className="mono" style={{ fontSize: 10, color: TEAL, letterSpacing: 1 }}>
+        <div className="mono" style={{ fontSize: 11, color: TEAL, letterSpacing: 1 }}>
           {n}
         </div>
         <div style={{ fontSize: 16, fontWeight: 700, marginTop: 6 }}>{title}</div>
@@ -636,7 +636,7 @@ function Field({ label, required, hint, children }) {
         className="mono"
         style={{
           display: "block",
-          fontSize: 10,
+          fontSize: 11,
           letterSpacing: 1,
           color: "#7b8089",
           textTransform: "uppercase",

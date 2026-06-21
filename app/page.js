@@ -5,7 +5,10 @@ import Chart from "chart.js/auto";
 import { getShotStrings } from "./lib/shotStrings";
 import SiteNav from "./components/SiteNav";
 
-const MONO = "var(--font-mono), 'Space Mono', monospace";
+// NOTE: canvas ctx.font does NOT support CSS variables (var(--...)) — including
+// one silently invalidates the whole font string, so Chart.js falls back to a
+// tiny default and ignores any size you set. Use a literal font stack here.
+const MONO = "'Space Mono', ui-monospace, monospace";
 const TEAL = "#2fb8a0";
 
 const METRICS = [
@@ -32,22 +35,22 @@ function chartOptions(yTitle) {
         bodyColor: "#cdd2d8",
         padding: 11,
         cornerRadius: 4,
-        titleFont: { family: MONO, size: 11 },
-        bodyFont: { family: MONO, size: 11 },
+        titleFont: { family: MONO, size: 14 },
+        bodyFont: { family: MONO, size: 14 },
         usePointStyle: true,
         callbacks: { title: (items) => "SHOT " + (items[0] ? items[0].label : "") },
       },
     },
     scales: {
       x: {
-        title: { display: true, text: "Shot number", color: muted, font: { family: MONO, size: 10 } },
+        title: { display: true, text: "Shot number", color: muted, font: { family: MONO, size: 13 } },
         grid: { color: grid },
-        ticks: { color: muted, font: { family: MONO, size: 10 }, maxTicksLimit: 12 },
+        ticks: { color: muted, font: { family: MONO, size: 13 }, maxTicksLimit: 12 },
       },
       y: {
-        title: { display: true, text: yTitle, color: muted, font: { family: MONO, size: 10 } },
+        title: { display: true, text: yTitle, color: muted, font: { family: MONO, size: 13 } },
         grid: { color: grid },
-        ticks: { color: muted, font: { family: MONO, size: 10 } },
+        ticks: { color: muted, font: { family: MONO, size: 13 } },
       },
     },
   };
@@ -148,7 +151,7 @@ export default function Home() {
     if (chartRef.current) {
       chartRef.current.data.labels = labels;
       chartRef.current.data.datasets = datasets;
-      chartRef.current.options.scales.y.title.text = yTitle;
+      chartRef.current.options = chartOptions(yTitle);
       chartRef.current.update();
     } else {
       chartRef.current = new Chart(canvas, {
@@ -326,7 +329,7 @@ export default function Home() {
                         </div>
                         <div
                           className="mono"
-                          style={{ fontSize: 10, color: "#7b8089", letterSpacing: 1, marginTop: 2 }}
+                          style={{ fontSize: 11, color: "#7b8089", letterSpacing: 1, marginTop: 2 }}
                         >
                           {m.cal} cal · {m.fill}
                         </div>
@@ -442,7 +445,7 @@ export default function Home() {
                 >
                   <div
                     className="mono"
-                    style={{ fontSize: 10, letterSpacing: 2, color: "#5e7170" }}
+                    style={{ fontSize: 11, letterSpacing: 2, color: "#5e7170" }}
                   >
                     SHOT-STRING COMPARISON · n={selGuns.length}
                   </div>
@@ -453,7 +456,7 @@ export default function Home() {
                       border: "1px solid #23272d",
                       borderRadius: 3,
                       overflow: "hidden",
-                      fontSize: 10,
+                      fontSize: 11,
                       letterSpacing: 1,
                     }}
                   >
@@ -527,7 +530,7 @@ export default function Home() {
                           style={{
                             flex: 1,
                             textAlign: "center",
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: 700,
                             letterSpacing: 1,
                             background: TEAL,
@@ -544,7 +547,7 @@ export default function Home() {
                           style={{
                             flex: 1,
                             textAlign: "center",
-                            fontSize: 10,
+                            fontSize: 11,
                             fontWeight: 700,
                             letterSpacing: 1,
                             border: "1px solid #2a2f35",
@@ -628,7 +631,7 @@ function ConfigChip({ children, accent }) {
     <span
       className="mono"
       style={{
-        fontSize: 10,
+        fontSize: 11,
         letterSpacing: 0.5,
         color: accent ? "#06100e" : "#aeb4bc",
         background: accent ? TEAL : "transparent",
@@ -674,7 +677,7 @@ function FeedCard({ g, onPick }) {
             position: "absolute",
             top: 8,
             left: 9,
-            fontSize: 9,
+            fontSize: 11,
             letterSpacing: 1,
             color: "#5e7170",
             background: "rgba(8,10,13,.7)",
@@ -691,7 +694,7 @@ function FeedCard({ g, onPick }) {
               position: "absolute",
               top: 8,
               right: 9,
-              fontSize: 9,
+              fontSize: 11,
               letterSpacing: 1,
               color: g.color,
               background: "rgba(8,10,13,.7)",
@@ -756,7 +759,7 @@ function FeedCard({ g, onPick }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            fontSize: 10,
+            fontSize: 11,
             letterSpacing: 0.5,
             color: "#5f656e",
           }}
@@ -808,7 +811,7 @@ function Feed({ guns, onPick }) {
           <span style={{ width: 7, height: 7, background: TEAL, display: "inline-block" }} />
           RECENTLY SUBMITTED
         </div>
-        <div className="mono" style={{ fontSize: 10, letterSpacing: 1, color: "#3f474a" }}>
+        <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#3f474a" }}>
           TAP ANY CARD TO COMPARE
         </div>
       </div>
@@ -830,7 +833,7 @@ function Feed({ guns, onPick }) {
 function Stat({ label, value, unit, accent }) {
   return (
     <div>
-      <div className="mono" style={{ fontSize: 9, letterSpacing: 1, color: "#5f656e" }}>
+      <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5f656e" }}>
         {label}
       </div>
       <div
@@ -838,7 +841,7 @@ function Stat({ label, value, unit, accent }) {
         style={{ fontSize: 17, fontWeight: 700, color: accent ? "#2fb8a0" : "#e6e7e9" }}
       >
         {value}
-        <span style={{ fontSize: 10, color: "#5f656e" }}>{unit}</span>
+        <span style={{ fontSize: 11, color: "#5f656e" }}>{unit}</span>
       </div>
     </div>
   );

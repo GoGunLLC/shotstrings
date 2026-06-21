@@ -12,7 +12,9 @@ export default function SiteNav({ active }) {
   const [session, setSession] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
   const menuRef = useRef(null);
+  const mobileRef = useRef(null);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -45,6 +47,7 @@ export default function SiteNav({ active }) {
   useEffect(() => {
     function onDoc(e) {
       if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false);
+      if (mobileRef.current && !mobileRef.current.contains(e.target)) setMobileOpen(false);
     }
     document.addEventListener("mousedown", onDoc);
     return () => document.removeEventListener("mousedown", onDoc);
@@ -73,7 +76,9 @@ export default function SiteNav({ active }) {
 
   return (
     <div
+      className="site-nav"
       style={{
+        position: "relative",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
@@ -98,7 +103,7 @@ export default function SiteNav({ active }) {
       </Link>
 
       <div
-        className="mono"
+        className="mono nav-desktop"
         style={{
           flex: "0 0 auto",
           display: "flex",
@@ -109,9 +114,6 @@ export default function SiteNav({ active }) {
           textTransform: "uppercase",
         }}
       >
-        <Link href="/" style={linkStyle("index")}>
-          Index
-        </Link>
         <Link href="/submit" style={linkStyle("submit")}>
           Submit
         </Link>
@@ -130,7 +132,7 @@ export default function SiteNav({ active }) {
         </Link>
       </div>
 
-      <div style={{ flex: "1 1 0", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 16 }}>
+      <div className="nav-desktop" style={{ flex: "1 1 0", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 16 }}>
         {session ? (
           <div style={{ position: "relative" }} ref={menuRef}>
             <div
@@ -172,7 +174,7 @@ export default function SiteNav({ active }) {
                   className="mono"
                   style={{
                     padding: "11px 14px",
-                    fontSize: 10,
+                    fontSize: 11,
                     color: "#5e7170",
                     borderBottom: "1px solid #181b1f",
                     whiteSpace: "nowrap",
@@ -226,7 +228,180 @@ export default function SiteNav({ active }) {
           </button>
         )}
       </div>
+
+      {/* mobile hamburger */}
+      <div className="nav-hamburger" ref={mobileRef} style={{ position: "relative" }}>
+        <button
+          onClick={() => setMobileOpen((o) => !o)}
+          aria-label="Menu"
+          aria-expanded={mobileOpen}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            gap: 5,
+            width: 42,
+            height: 38,
+            padding: "9px 10px",
+            background: "transparent",
+            border: "1px solid #23272d",
+            borderRadius: 4,
+            cursor: "pointer",
+          }}
+        >
+          <span style={{ height: 2, width: "100%", background: "#cdd2d8", borderRadius: 2 }} />
+          <span style={{ height: 2, width: "100%", background: "#cdd2d8", borderRadius: 2 }} />
+          <span style={{ height: 2, width: "100%", background: "#cdd2d8", borderRadius: 2 }} />
+        </button>
+
+        {mobileOpen && (
+          <div
+            style={{
+              position: "absolute",
+              top: 46,
+              right: 0,
+              minWidth: 220,
+              background: "#0e1013",
+              border: "1px solid #23272d",
+              borderRadius: 6,
+              overflow: "hidden",
+              zIndex: 40,
+              boxShadow: "0 18px 40px rgba(0,0,0,.5)",
+            }}
+          >
+            <MobileLink href="/submit" label="Submit" active={active === "submit"} onNav={() => setMobileOpen(false)} />
+            {session && (
+              <MobileLink href="/dashboard" label="Dashboard" active={active === "dashboard"} onNav={() => setMobileOpen(false)} />
+            )}
+            {isAdmin && (
+              <MobileLink href="/admin" label="Admin" active={active === "admin"} accent onNav={() => setMobileOpen(false)} />
+            )}
+            <MobileLink href="/about" label="About" active={active === "about"} onNav={() => setMobileOpen(false)} />
+
+            <div style={{ borderTop: "1px solid #181b1f" }}>
+              {session ? (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "13px 16px" }}>
+                    <div
+                      style={{
+                        flex: "0 0 auto",
+                        width: 30,
+                        height: 30,
+                        borderRadius: "50%",
+                        background: TEAL,
+                        color: "#06100e",
+                        fontSize: 14,
+                        fontWeight: 800,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {(session.user.email || "?").charAt(0)}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div
+                        className="mono"
+                        style={{
+                          fontSize: 11,
+                          letterSpacing: 1,
+                          color: "#5e7170",
+                          textTransform: "uppercase",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 5,
+                        }}
+                      >
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: TEAL, display: "inline-block" }} />
+                        Signed in
+                      </div>
+                      <div
+                        style={{
+                          fontSize: 13.5,
+                          color: "#e6e7e9",
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          marginTop: 2,
+                        }}
+                      >
+                        {session.user.email}
+                      </div>
+                    </div>
+                  </div>
+                  <div
+                    onClick={() => {
+                      signOut();
+                      setMobileOpen(false);
+                    }}
+                    className="mono"
+                    style={{
+                      padding: "12px 16px",
+                      fontSize: 12,
+                      letterSpacing: 0.5,
+                      color: "#7b8089",
+                      cursor: "pointer",
+                      textTransform: "uppercase",
+                      borderTop: "1px solid #181b1f",
+                    }}
+                  >
+                    Sign out
+                  </div>
+                </>
+              ) : (
+                <div
+                  onClick={() => {
+                    signInWithGoogle();
+                    setMobileOpen(false);
+                  }}
+                  className="mono"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 9,
+                    padding: "13px 16px",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: "#e6e7e9",
+                    cursor: "pointer",
+                    textTransform: "uppercase",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  <GoogleMark />
+                  Sign in with Google
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
+  );
+}
+
+function MobileLink({ href, label, active, accent, onNav }) {
+  const color = accent ? (active ? "#e0a93f" : "#c9923a") : active ? "#e6e7e9" : "#aeb4bc";
+  return (
+    <Link
+      href={href}
+      onClick={onNav}
+      className="mono"
+      style={{
+        display: "block",
+        padding: "12px 16px",
+        fontSize: 13,
+        letterSpacing: 1,
+        color,
+        textDecoration: "none",
+        textTransform: "uppercase",
+        borderBottom: "1px solid #181b1f",
+        background: active ? "#12151a" : "transparent",
+      }}
+    >
+      {label}
+    </Link>
   );
 }
 

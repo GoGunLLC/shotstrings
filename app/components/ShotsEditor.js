@@ -76,7 +76,7 @@ export default function ShotsEditor({ shots, onChange }) {
           <button type="button" onClick={applyPaste} style={pasteBtn}>
             Load pasted shots
           </button>
-          <span className="mono" style={{ fontSize: 10, color: "#5e7170", letterSpacing: 0.5 }}>
+          <span className="mono" style={{ fontSize: 11, color: "#5e7170", letterSpacing: 0.5 }}>
             REPLACES THE GRID BELOW
           </span>
         </div>
@@ -98,7 +98,7 @@ export default function ShotsEditor({ shots, onChange }) {
               gap: 10,
               padding: "9px 12px",
               background: "#0b0d10",
-              fontSize: 9.5,
+              fontSize: 11,
               letterSpacing: 1,
               color: "#5e7170",
               textTransform: "uppercase",
@@ -180,7 +180,7 @@ export default function ShotsEditor({ shots, onChange }) {
           + Add shot
         </button>
         {shots.length > 0 && (
-          <span className="mono" style={{ fontSize: 10, color: "#5e7170", letterSpacing: 0.5 }}>
+          <span className="mono" style={{ fontSize: 11, color: "#5e7170", letterSpacing: 0.5 }}>
             {shots.length} SHOTS · {measured} MEASURED
             {estimated ? ` · ${estimated} UNREAD` : ""}
           </span>
