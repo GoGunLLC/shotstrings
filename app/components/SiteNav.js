@@ -83,7 +83,7 @@ export default function SiteNav({ active }) {
     >
       <Link
         href="/"
-        style={{ display: "flex", alignItems: "center", gap: 13, textDecoration: "none", color: "inherit" }}
+        style={{ flex: "1 1 0", display: "flex", alignItems: "center", gap: 13, textDecoration: "none", color: "inherit" }}
       >
         <div
           style={{
@@ -100,9 +100,11 @@ export default function SiteNav({ active }) {
       <div
         className="mono"
         style={{
+          flex: "0 0 auto",
           display: "flex",
+          justifyContent: "center",
           gap: 28,
-          fontSize: 11,
+          fontSize: 13,
           letterSpacing: 1,
           textTransform: "uppercase",
         }}
@@ -123,12 +125,12 @@ export default function SiteNav({ active }) {
             Admin
           </Link>
         )}
-        <Link href="/" style={linkStyle("method")}>
-          Method
+        <Link href="/about" style={linkStyle("about")}>
+          About
         </Link>
       </div>
 
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+      <div style={{ flex: "1 1 0", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 16 }}>
         {session ? (
           <div style={{ position: "relative" }} ref={menuRef}>
             <div

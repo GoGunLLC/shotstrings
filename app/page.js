@@ -174,7 +174,7 @@ export default function Home() {
                   <div
                     className="mono"
                     style={{
-                      fontSize: 10,
+                      fontSize: 12,
                       letterSpacing: 2,
                       color: "#5e7170",
                       display: "flex",
@@ -196,9 +196,9 @@ export default function Home() {
                     margin: "18px 0 0",
                   }}
                 >
-                  FIND YOUR
+                  KNOW HOW IT
                   <br />
-                  <span style={{ color: TEAL }}>SHOT STRING</span>
+                  <span style={{ color: TEAL }}>REALLY SHOOTS</span>
                 </h1>
                 <p
                   style={{
@@ -210,7 +210,7 @@ export default function Home() {
                   }}
                 >
                   Real chronograph data for every airgun — average, spread and standard deviation.
-                  Search a rifle, read exactly how it shoots, compare head to head.
+                  Search a rifle or pistol, read exactly how it shoots, compare head to head.
                 </p>
               </div>
             )}
@@ -242,7 +242,7 @@ export default function Home() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && matches.length) pick(matches[0].id);
                   }}
-                  placeholder="Search a rifle — FX Impact, Red Wolf…"
+                  placeholder="Search an airgun — FX Impact, Red Wolf…"
                   autoComplete="off"
                   className="mono"
                   style={{
@@ -258,15 +258,29 @@ export default function Home() {
                 <div
                   className="mono"
                   style={{
-                    background: TEAL,
-                    color: "#06100e",
-                    fontSize: 12,
-                    fontWeight: 700,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    color: "#5e7170",
+                    fontSize: 11,
                     letterSpacing: 1,
-                    padding: "14px 20px",
+                    padding: "14px 18px",
+                    whiteSpace: "nowrap",
+                    pointerEvents: "none",
+                    userSelect: "none",
                   }}
                 >
-                  READ ↵
+                  <span
+                    style={{
+                      border: "1px solid #2a2f35",
+                      borderRadius: 3,
+                      padding: "2px 6px",
+                      color: "#aeb4bc",
+                    }}
+                  >
+                    ↵
+                  </span>
+                  ENTER TO READ
                 </div>
               </div>
 
@@ -337,7 +351,7 @@ export default function Home() {
             >
               <span
                 className="mono"
-                style={{ fontSize: 10, letterSpacing: 2, color: "#5e7170" }}
+                style={{ fontSize: 12, letterSpacing: 2, color: "#5e7170" }}
               >
                 ON RECORD
               </span>
@@ -347,11 +361,11 @@ export default function Home() {
                   onClick={() => pick(t.id)}
                   className="mono"
                   style={{
-                    fontSize: 11,
+                    fontSize: 13,
                     color: "#aeb4bc",
                     border: "1px solid #23272d",
                     borderRadius: 3,
-                    padding: "5px 11px",
+                    padding: "6px 12px",
                     cursor: "pointer",
                     textTransform: "uppercase",
                   }}
@@ -361,6 +375,11 @@ export default function Home() {
               ))}
             </div>
           </div>
+
+          {/* recently submitted feed */}
+          {!active && guns.length > 0 && (
+            <Feed guns={guns} onPick={pick} />
+          )}
 
           {/* results */}
           {active && (
@@ -545,6 +564,265 @@ export default function Home() {
             </div>
           )}
         </div>
+    </div>
+  );
+}
+
+// Mini shot-string curve used as each feed card's thumbnail.
+function Sparkline({ data, color }) {
+  const vals = (data || []).filter((v) => v != null);
+  if (vals.length < 2) return null;
+  const w = 300;
+  const h = 70;
+  const padX = 7;
+  // Reserve extra headroom up top so the curve never rides under the
+  // "N SHOTS" / caliber badges that sit in the thumbnail's top corners.
+  const padTop = 24;
+  const padBottom = 8;
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const span = max - min || 1;
+  const n = vals.length;
+  const pts = vals.map((v, i) => {
+    const x = padX + (i / (n - 1)) * (w - padX * 2);
+    const y = padTop + (1 - (v - min) / span) * (h - padTop - padBottom);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      style={{ width: "100%", height: "100%", display: "block" }}
+    >
+      <polyline
+        points={pts.join(" ")}
+        fill="none"
+        stroke={color}
+        strokeWidth="2"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
+  );
+}
+
+function timeAgo(iso) {
+  if (!iso) return "";
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const s = Math.max(0, Math.floor((Date.now() - then) / 1000));
+  if (s < 60) return "just now";
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  const mo = Math.floor(d / 30);
+  if (mo < 12) return `${mo}mo ago`;
+  return `${Math.floor(mo / 12)}y ago`;
+}
+
+function ConfigChip({ children, accent }) {
+  return (
+    <span
+      className="mono"
+      style={{
+        fontSize: 10,
+        letterSpacing: 0.5,
+        color: accent ? "#06100e" : "#aeb4bc",
+        background: accent ? TEAL : "transparent",
+        border: accent ? "none" : "1px solid #23272d",
+        borderRadius: 3,
+        padding: "3px 7px",
+        textTransform: "uppercase",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {children}
+    </span>
+  );
+}
+
+function FeedCard({ g, onPick }) {
+  return (
+    <div
+      onClick={() => onPick(g.id)}
+      style={{
+        border: "1px solid #181b1f",
+        borderRadius: 6,
+        background: "#0c0e11",
+        overflow: "hidden",
+        cursor: "pointer",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* thumbnail: the shot-string curve itself */}
+      <div
+        style={{
+          position: "relative",
+          height: 92,
+          background: "#0e1013",
+          borderBottom: "1px solid #181b1f",
+        }}
+      >
+        <Sparkline data={g.vels} color={g.color} />
+        <span
+          className="mono"
+          style={{
+            position: "absolute",
+            top: 8,
+            left: 9,
+            fontSize: 9,
+            letterSpacing: 1,
+            color: "#5e7170",
+            background: "rgba(8,10,13,.7)",
+            padding: "2px 6px",
+            borderRadius: 3,
+          }}
+        >
+          {g.shots} SHOTS
+        </span>
+        {g.cal && (
+          <span
+            className="mono"
+            style={{
+              position: "absolute",
+              top: 8,
+              right: 9,
+              fontSize: 9,
+              letterSpacing: 1,
+              color: g.color,
+              background: "rgba(8,10,13,.7)",
+              padding: "2px 6px",
+              borderRadius: 3,
+            }}
+          >
+            {g.cal} CAL
+          </span>
+        )}
+      </div>
+
+      {/* body */}
+      <div style={{ padding: "13px 14px", display: "flex", flexDirection: "column", gap: 10, flex: 1 }}>
+        <div>
+          <div
+            style={{
+              fontWeight: 800,
+              fontSize: 14,
+              letterSpacing: "-.3px",
+              textTransform: "uppercase",
+              lineHeight: 1.15,
+            }}
+          >
+            {g.brand} {g.model}
+          </div>
+          <div
+            className="mono"
+            style={{ fontSize: 11, color: "#7b8089", letterSpacing: 0.5, marginTop: 3 }}
+          >
+            {g.projectile || "Custom projectile"} · {g.grains} gr
+          </div>
+        </div>
+
+        {/* configuration chips */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+          <ConfigChip>{g.fill}</ConfigChip>
+          <ConfigChip>{g.regulated ? "Regulated" : "Unreg"}</ConfigChip>
+          <ConfigChip>{g.suppressor ? g.suppressor : "Unmoderated"}</ConfigChip>
+        </div>
+
+        {/* headline stats */}
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr",
+            gap: 8,
+            borderTop: "1px solid #181b1f",
+            paddingTop: 10,
+            marginTop: "auto",
+          }}
+        >
+          <Stat label="AVG VEL" value={g.mv} unit=" fps" />
+          <Stat label="STD DEV" value={g.sd} unit=" fps" accent />
+          <Stat label="AVG E" value={g.afpe} unit=" ft-lb" />
+        </div>
+
+        {/* footer */}
+        <div
+          className="mono"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            fontSize: 10,
+            letterSpacing: 0.5,
+            color: "#5f656e",
+          }}
+        >
+          <span>{timeAgo(g.createdAt)}</span>
+          {g.video?.url && (
+            <a
+              href={g.video.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              style={{ color: TEAL, textDecoration: "none", fontWeight: 700, letterSpacing: 1 }}
+            >
+              WATCH PROOF ↗
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Feed({ guns, onPick }) {
+  // Newest first; the base list is ordered oldest→newest.
+  const recent = useMemo(() => {
+    const copy = [...guns];
+    copy.sort((a, b) => {
+      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return tb - ta;
+    });
+    return copy.slice(0, 12);
+  }, [guns]);
+
+  return (
+    <div style={{ marginTop: 46, maxWidth: 1100, marginLeft: "auto", marginRight: "auto" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 16,
+        }}
+      >
+        <div
+          className="mono"
+          style={{ fontSize: 12, letterSpacing: 2, color: "#5e7170", display: "flex", alignItems: "center", gap: 9 }}
+        >
+          <span style={{ width: 7, height: 7, background: TEAL, display: "inline-block" }} />
+          RECENTLY SUBMITTED
+        </div>
+        <div className="mono" style={{ fontSize: 10, letterSpacing: 1, color: "#3f474a" }}>
+          TAP ANY CARD TO COMPARE
+        </div>
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(auto-fill, minmax(270px, 1fr))",
+          gap: 14,
+        }}
+      >
+        {recent.map((g) => (
+          <FeedCard key={g.id} g={g} onPick={onPick} />
+        ))}
+      </div>
     </div>
   );
 }

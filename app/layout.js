@@ -18,7 +18,7 @@ const spaceMono = Space_Mono({
 export const metadata = {
   title: "ShotStrings — Airgun shot string database",
   description:
-    "The largest database of real airgun shot strings. Search, compare, and verify rifle performance.",
+    "The largest database of real airgun shot strings. Search, compare, and verify airgun performance.",
 };
 
 export default function RootLayout({ children }) {

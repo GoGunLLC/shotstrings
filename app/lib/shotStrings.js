@@ -63,6 +63,9 @@ function mapRow(row, index) {
   const cal = row.caliber?.name ?? "";
   const startPsi = row.pressures?.[0]?.start_pressure_psi;
 
+  const vid = row.video || null;
+  const ytId = vid?.youtube_video_id ?? null;
+
   return {
     id: row.id,
     brand: row.variant?.model?.brand?.name ?? "",
@@ -80,9 +83,25 @@ function mapRow(row, index) {
     es,
     afpe: fpeVals.length ? mean(fpeVals).toFixed(1) : "0",
     projectile: row.projectile?.name ?? null,
+    projType: row.projectile?.type ?? null,
     grains,
     estimatedCount: shots.length - measured.length,
     price: "—",
+    // Feed / submission metadata
+    createdAt: row.created_at ?? null,
+    suppressor: row.moderator?.name ?? null,
+    regulated: !!row.ran_regulated,
+    barrelLength: row.variant?.barrel_length_in ?? null,
+    video: vid
+      ? {
+          url: vid.youtube_url ?? null,
+          ytId,
+          thumb:
+            vid.thumbnail_url ??
+            (ytId ? `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg` : null),
+          title: vid.title ?? null,
+        }
+      : null,
   };
 }
 
@@ -92,13 +111,17 @@ export async function getShotStrings() {
     .from("shot_strings")
     .select(
       `id,
+       created_at,
+       ran_regulated,
        projectile_weight_grains,
        caliber:calibers ( name ),
        variant:airgun_variants (
          barrel_length_in,
          model:airgun_models ( name, brand:brands ( name ) )
        ),
-       projectile:projectiles ( name ),
+       projectile:projectiles ( name, type ),
+       moderator:moderators ( name ),
+       video:videos ( youtube_url, youtube_video_id, thumbnail_url, title ),
        shots ( shot_number, velocity_fps, velocity_status ),
        pressures:shot_string_tank_pressures ( start_pressure_psi, end_pressure_psi )`
     )
