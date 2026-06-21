@@ -170,21 +170,23 @@ export default function Home() {
           <div style={{ padding: "60px 0 26px", textAlign: active ? "left" : "center" }}>
             {!active && (
               <div style={{ marginBottom: 6 }}>
-                <div
-                  className="mono"
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: 2,
-                    color: "#5e7170",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 9,
-                  }}
-                >
-                  <span style={{ width: 7, height: 7, background: TEAL, display: "inline-block" }} />
-                  MEASURED, NOT CLAIMED — 1,284 RIFLES ON RECORD
-                </div>
+                {guns.length > 0 && (
+                  <div
+                    className="mono"
+                    style={{
+                      fontSize: 10,
+                      letterSpacing: 2,
+                      color: "#5e7170",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 9,
+                    }}
+                  >
+                    <span style={{ width: 7, height: 7, background: TEAL, display: "inline-block" }} />
+                    MEASURED, NOT CLAIMED — {guns.length.toLocaleString()} SHOT STRING{guns.length === 1 ? "" : "S"} ON RECORD
+                  </div>
+                )}
                 <h1
                   style={{
                     fontSize: 64,

@@ -24,13 +24,3 @@ input::placeholder {
   background: #2fb8a0;
   color: #06100e;
 }
-
-@keyframes ssblink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.25;
-  }
-}

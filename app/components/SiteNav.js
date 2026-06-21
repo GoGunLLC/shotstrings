@@ -129,37 +129,6 @@ export default function SiteNav({ active }) {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <div
-          className="mono"
-          title="The shot strings shown are fabricated sample data for testing. Real, video-verified data is coming soon."
-          style={{
-            fontSize: 9.5,
-            letterSpacing: 1,
-            color: "#e0a93f",
-            background: "rgba(224,169,63,0.08)",
-            border: "1px solid rgba(224,169,63,0.35)",
-            borderRadius: 3,
-            padding: "5px 10px",
-            display: "flex",
-            alignItems: "center",
-            gap: 7,
-            cursor: "default",
-            textTransform: "uppercase",
-          }}
-        >
-          <span
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: "50%",
-              background: "#e0a93f",
-              animation: "ssblink 1.8s infinite",
-              display: "inline-block",
-            }}
-          />
-          Demo data · sample, not real yet
-        </div>
-
         {session ? (
           <div style={{ position: "relative" }} ref={menuRef}>
             <div
