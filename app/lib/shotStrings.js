@@ -63,6 +63,14 @@ function mapRow(row, index) {
   const cal = row.caliber?.name ?? "";
   const startPsi = row.pressures?.[0]?.start_pressure_psi;
 
+  // Total reservoir volume across the variant's tanks (bottle + any add-on),
+  // used by the Browse filters. Null when no tank volume is on record.
+  const tankCc =
+    (row.variant?.tanks || []).reduce(
+      (s, t) => s + (Number(t.volume_cc) || 0),
+      0
+    ) || null;
+
   const vid = row.video || null;
   const ytId = vid?.youtube_video_id ?? null;
 
@@ -92,6 +100,7 @@ function mapRow(row, index) {
     suppressor: row.moderator?.name ?? null,
     regulated: !!row.ran_regulated,
     barrelLength: row.variant?.barrel_length_in ?? null,
+    tankCc,
     video: vid
       ? {
           url: vid.youtube_url ?? null,
@@ -117,6 +126,7 @@ export async function getShotStrings() {
        caliber:calibers ( name ),
        variant:airgun_variants (
          barrel_length_in,
+         tanks:airgun_tanks ( volume_cc ),
          model:airgun_models ( name, brand:brands ( name ) )
        ),
        projectile:projectiles ( name, type ),
