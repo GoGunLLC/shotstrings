@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Archivo, Space_Mono } from "next/font/google";
 import FeedbackWidget from "./components/FeedbackWidget";
+import SiteFooter from "./components/SiteFooter";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -27,6 +28,7 @@ export default function RootLayout({ children }) {
     <html lang="en" className={`${archivo.variable} ${spaceMono.variable}`}>
       <body>
         {children}
+        <SiteFooter />
         <FeedbackWidget />
       </body>
     </html>
