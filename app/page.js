@@ -492,7 +492,8 @@ export default function Home() {
                 <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: "#5e7170" }}>
                   SHOT-STRING COMPARISON
                 </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                {/* stretch so the Share button matches the metric toggle's height */}
+                <div style={{ display: "flex", alignItems: "stretch", gap: 10 }}>
                 <div
                   className="mono"
                   style={{

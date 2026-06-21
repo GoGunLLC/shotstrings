@@ -37,6 +37,16 @@ export default function FeedbackWidget() {
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Allow other components to open the modal without the floating launcher —
+  // e.g. on mobile the FAB is hidden and the hamburger menu fires this event.
+  useEffect(() => {
+    function onOpen() {
+      setOpen(true);
+    }
+    window.addEventListener("ss:open-feedback", onOpen);
+    return () => window.removeEventListener("ss:open-feedback", onOpen);
+  }, []);
+
   function signInWithGoogle() {
     // Preserve intent: land back on the same page so the user can finish the
     // feedback they came to leave.
@@ -264,26 +274,28 @@ export default function FeedbackWidget() {
                         Sign in with your Google account to send a suggestion. It takes a second and
                         lets us follow up if we have questions.
                       </div>
-                      <button
-                        onClick={signInWithGoogle}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 9,
-                          background: "#fff",
-                          color: "#1f2328",
-                          border: "none",
-                          borderRadius: 4,
-                          padding: "9px 15px",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          cursor: "pointer",
-                          fontFamily: "inherit",
-                        }}
-                      >
-                        <GoogleMark />
-                        Sign in with Google
-                      </button>
+                      <div style={{ display: "flex", justifyContent: "center" }}>
+                        <button
+                          onClick={signInWithGoogle}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 9,
+                            background: "#131314",
+                            color: "#e3e3e3",
+                            border: "1px solid #8e918f",
+                            borderRadius: 4,
+                            padding: "9px 15px",
+                            fontSize: 13,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            fontFamily: "inherit",
+                          }}
+                        >
+                          <GoogleMark />
+                          Sign in with Google
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <>

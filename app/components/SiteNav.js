@@ -212,9 +212,9 @@ export default function SiteNav({ active }) {
               display: "flex",
               alignItems: "center",
               gap: 9,
-              background: "#fff",
-              color: "#1f2328",
-              border: "none",
+              background: "#131314",
+              color: "#e3e3e3",
+              border: "1px solid #8e918f",
               borderRadius: 4,
               padding: "8px 14px",
               fontSize: 12,
@@ -277,6 +277,25 @@ export default function SiteNav({ active }) {
               <MobileLink href="/admin" label="Admin" active={active === "admin"} accent onNav={() => setMobileOpen(false)} />
             )}
             <MobileLink href="/about" label="About" active={active === "about"} onNav={() => setMobileOpen(false)} />
+            <div
+              onClick={() => {
+                window.dispatchEvent(new Event("ss:open-feedback"));
+                setMobileOpen(false);
+              }}
+              className="mono"
+              style={{
+                display: "block",
+                padding: "12px 16px",
+                fontSize: 13,
+                letterSpacing: 1,
+                color: "#aeb4bc",
+                cursor: "pointer",
+                textTransform: "uppercase",
+                borderBottom: "1px solid #181b1f",
+              }}
+            >
+              Feedback
+            </div>
 
             <div style={{ borderTop: "1px solid #181b1f" }}>
               {session ? (

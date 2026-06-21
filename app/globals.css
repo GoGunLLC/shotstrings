@@ -50,4 +50,9 @@ input::placeholder {
   .airgun-search {
     font-size: 16px;
   }
+  /* On mobile the floating feedback pill ate too much of the screen, so it
+     moves into the hamburger menu instead (see SiteNav "Feedback" item). */
+  .feedback-fab {
+    display: none !important;
+  }
 }
