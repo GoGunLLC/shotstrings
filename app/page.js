@@ -85,6 +85,7 @@ export default function Home() {
     model: "",
   });
   const [chartHeight, setChartHeight] = useState(330); // px, drag-resizable
+  const [showShare, setShowShare] = useState(false); // share modal
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 760px)");
@@ -179,6 +180,15 @@ export default function Home() {
     for (const k of ["cal", "tank", "supp", "reg", "brand", "model"]) {
       if (filters[k]) p.set(k, filters[k]);
     }
+    return p.toString();
+  };
+
+  // The embed/iframe only needs what the chart itself renders from: which
+  // strings and which metric. (Browse mode/filters don't affect the curve.)
+  const buildEmbedQuery = () => {
+    const p = new URLSearchParams();
+    if (selected.length) p.set("ids", selected.join(","));
+    p.set("metric", metric);
     return p.toString();
   };
 
@@ -480,8 +490,9 @@ export default function Home() {
                 }}
               >
                 <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: "#5e7170" }}>
-                  SHOT-STRING COMPARISON · n={selGuns.length}
+                  SHOT-STRING COMPARISON
                 </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <div
                   className="mono"
                   style={{
@@ -511,6 +522,40 @@ export default function Home() {
                       </span>
                     );
                   })}
+                </div>
+
+                {/* share — opens link / embed modal (YouTube-style) */}
+                <button
+                  onClick={() => setShowShare(true)}
+                  disabled={!selGuns.length}
+                  className="mono"
+                  title="Share or embed this graph"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                    background: "transparent",
+                    border: "1px solid #23272d",
+                    borderRadius: 3,
+                    color: selGuns.length ? "#cdd2d8" : "#3f474a",
+                    padding: "6px 12px",
+                    fontSize: 11,
+                    letterSpacing: 1,
+                    textTransform: "uppercase",
+                    cursor: selGuns.length ? "pointer" : "not-allowed",
+                    fontFamily: "inherit",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" style={{ width: 13, height: 13, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" }}>
+                    <circle cx="18" cy="5" r="3" />
+                    <circle cx="6" cy="12" r="3" />
+                    <circle cx="18" cy="19" r="3" />
+                    <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+                    <line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
+                  </svg>
+                  Share
+                </button>
                 </div>
               </div>
 
@@ -661,6 +706,16 @@ export default function Home() {
             )}
           </div>
         </div>
+      )}
+
+      {/* share / embed modal */}
+      {showShare && (
+        <ShareModal
+          graphQuery={buildGraphQuery()}
+          embedQuery={buildEmbedQuery()}
+          count={selGuns.length}
+          onClose={() => setShowShare(false)}
+        />
       )}
 
       {/* sticky compare bar — entry point into graph mode */}
@@ -1334,6 +1389,266 @@ function CompareBar({ count, onDisplay, onClear }) {
       >
         Display Graph →
       </button>
+    </div>
+  );
+}
+
+// YouTube-style share sheet: a direct link to reopen the exact graph, or an
+// <iframe> snippet pointing at the chrome-free /embed view for pasting into a
+// forum post, Shopify product page, etc.
+function ShareModal({ graphQuery, embedQuery, count, onClose }) {
+  const [tab, setTab] = useState("link"); // "link" | "embed"
+  const [copied, setCopied] = useState(""); // which field was just copied
+  const [width, setWidth] = useState(560); // YouTube's default embed size
+  const [height, setHeight] = useState(315);
+
+  const origin =
+    typeof window !== "undefined" ? window.location.origin : "";
+  const linkUrl = `${origin}/?${graphQuery}`;
+  const embedUrl = `${origin}/embed?${embedQuery}`;
+  const w = Math.max(120, Number(width) || 0);
+  const h = Math.max(90, Number(height) || 0);
+  const iframeCode = `<iframe width="${w}" height="${h}" src="${embedUrl}" title="ShotStrings comparison" frameborder="0" style="border:0;border-radius:6px" loading="lazy"></iframe>`;
+
+  // Close on Escape, and lock background scroll while open.
+  useEffect(() => {
+    const onKey = (e) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  async function copy(text, which) {
+    try {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(text);
+      } else {
+        // Fallback for non-secure contexts where the async API is unavailable.
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.opacity = "0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+      }
+      setCopied(which);
+      setTimeout(() => setCopied(""), 1800);
+    } catch {
+      setCopied("");
+    }
+  }
+
+  const tabBtn = (key, label) => {
+    const on = tab === key;
+    return (
+      <button
+        onClick={() => setTab(key)}
+        className="mono"
+        style={{
+          padding: "9px 16px",
+          background: "transparent",
+          border: "none",
+          borderBottom: `2px solid ${on ? TEAL : "transparent"}`,
+          color: on ? "#e6e7e9" : "#7b8089",
+          fontWeight: on ? 700 : 400,
+          fontSize: 12,
+          letterSpacing: 1,
+          textTransform: "uppercase",
+          cursor: "pointer",
+          fontFamily: "inherit",
+        }}
+      >
+        {label}
+      </button>
+    );
+  };
+
+  const copyBtn = (text, which) => (
+    <button
+      onClick={() => copy(text, which)}
+      className="mono"
+      style={{
+        flex: "0 0 auto",
+        background: copied === which ? TEAL : "transparent",
+        color: copied === which ? "#06100e" : "#cdd2d8",
+        border: `1px solid ${copied === which ? TEAL : "#23272d"}`,
+        borderRadius: 4,
+        padding: "0 16px",
+        fontSize: 11,
+        fontWeight: 700,
+        letterSpacing: 1,
+        textTransform: "uppercase",
+        cursor: "pointer",
+        fontFamily: "inherit",
+      }}
+    >
+      {copied === which ? "Copied" : "Copy"}
+    </button>
+  );
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(3,4,6,.7)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+        zIndex: 60,
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Share this graph"
+        style={{
+          width: "100%",
+          maxWidth: 540,
+          background: "#0e1013",
+          border: "1px solid #23272d",
+          borderRadius: 8,
+          boxShadow: "0 24px 60px rgba(0,0,0,.6)",
+          overflow: "hidden",
+        }}
+      >
+        {/* header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "16px 18px 0",
+          }}
+        >
+          <div style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-.3px", textTransform: "uppercase" }}>
+            Share graph
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            className="mono"
+            style={{
+              background: "transparent",
+              border: "1px solid #2a2f35",
+              borderRadius: 4,
+              color: "#7b8089",
+              fontSize: 15,
+              lineHeight: 1,
+              padding: "3px 9px",
+              cursor: "pointer",
+            }}
+          >
+            ×
+          </button>
+        </div>
+
+        {/* tabs */}
+        <div style={{ display: "flex", gap: 4, padding: "10px 18px 0", borderBottom: "1px solid #181b1f" }}>
+          {tabBtn("link", "Link")}
+          {tabBtn("embed", "Embed")}
+        </div>
+
+        <div style={{ padding: 18 }}>
+          {tab === "link" ? (
+            <>
+              <p style={{ color: "#868d96", fontSize: 13, lineHeight: 1.5, margin: "0 0 12px" }}>
+                Anyone with this link opens the same {count} shot string{count === 1 ? "" : "s"} on the
+                exact metric you&apos;re viewing.
+              </p>
+              <div style={{ display: "flex", gap: 8 }}>
+                <input
+                  readOnly
+                  value={linkUrl}
+                  onFocus={(e) => e.target.select()}
+                  className="mono"
+                  style={{ ...field, flex: 1, fontSize: 12 }}
+                />
+                {copyBtn(linkUrl, "link")}
+              </div>
+            </>
+          ) : (
+            <>
+              <p style={{ color: "#868d96", fontSize: 13, lineHeight: 1.5, margin: "0 0 12px" }}>
+                Paste this into a forum post, blog, or product page (Shopify, etc.) to embed the live
+                graph — just like a YouTube video.
+              </p>
+
+              {/* size controls */}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginBottom: 12 }}>
+                <div>
+                  <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
+                    Width
+                  </label>
+                  <input
+                    type="number"
+                    min="120"
+                    value={width}
+                    onChange={(e) => setWidth(e.target.value)}
+                    className="mono"
+                    style={{ ...field, width: 96 }}
+                  />
+                </div>
+                <span style={{ color: "#5f656e", paddingBottom: 9 }}>×</span>
+                <div>
+                  <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
+                    Height
+                  </label>
+                  <input
+                    type="number"
+                    min="90"
+                    value={height}
+                    onChange={(e) => setHeight(e.target.value)}
+                    className="mono"
+                    style={{ ...field, width: 96 }}
+                  />
+                </div>
+                <button
+                  onClick={() => {
+                    setWidth(560);
+                    setHeight(315);
+                  }}
+                  className="mono"
+                  style={{
+                    background: "transparent",
+                    border: "1px solid #23272d",
+                    borderRadius: 4,
+                    color: "#7b8089",
+                    padding: "9px 12px",
+                    fontSize: 11,
+                    letterSpacing: 1,
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  Reset
+                </button>
+              </div>
+
+              <textarea
+                readOnly
+                value={iframeCode}
+                onFocus={(e) => e.target.select()}
+                rows={3}
+                className="mono"
+                style={{ ...field, width: "100%", resize: "vertical", fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}
+              />
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>{copyBtn(iframeCode, "embed")}</div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
