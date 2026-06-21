@@ -5,6 +5,7 @@ import {
   getManageData,
   mergeCatalogRecord,
   deleteCatalogRecord,
+  renameCatalogRecord,
 } from "../lib/catalog";
 
 const TEAL = "#2fb8a0";
@@ -97,7 +98,9 @@ export default function ManageCatalog() {
   return (
     <div>
       <p style={{ color: "#868d96", fontSize: 13, lineHeight: 1.6, margin: "0 0 16px" }}>
-        Review what's linked to a catalog entry before you change it. <strong style={{ color: TEAL }}>Merge</strong>{" "}
+        Review what's linked to a catalog entry before you change it.{" "}
+        <strong style={{ color: TEAL }}>Rename</strong> fixes the name in place (everything stays linked);{" "}
+        <strong style={{ color: TEAL }}>Merge</strong>{" "}
         folds a duplicate into another record (everything linked moves over);{" "}
         <strong style={{ color: TEAL }}>Delete</strong> is only available once nothing points at a record.
       </p>
@@ -177,6 +180,7 @@ export default function ManageCatalog() {
 
 function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
   const [mergeTarget, setMergeTarget] = useState("");
+  const [renameVal, setRenameVal] = useState(rec.name || "");
   const [busy, setBusy] = useState(false);
 
   // Valid merge targets: same entity, not itself.
@@ -206,6 +210,16 @@ function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
           .join(", ")
       : "";
     onDone(`Merged "${rec.label}" into "${target.label}".${moved ? ` Moved ${moved}.` : ""}`);
+  }
+
+  async function doRename() {
+    const next = renameVal.trim();
+    if (!next || next === (rec.name || "")) return;
+    setBusy(true);
+    const { error } = await renameCatalogRecord(rec.kind, rec.id, next);
+    setBusy(false);
+    if (error) return onError(`Rename failed: ${error}`);
+    onDone(`Renamed "${rec.name}" to "${next}".`);
   }
 
   async function doDelete() {
@@ -256,6 +270,57 @@ function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
 
       {open && (
         <div style={{ padding: "14px 16px", borderTop: "1px solid #141619", background: "#080a0c" }}>
+          {/* rename */}
+          {rec.renamable && (
+            <div style={{ marginBottom: 18 }}>
+              <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
+                Rename
+              </label>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <input
+                  value={renameVal}
+                  onChange={(e) => setRenameVal(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") doRename();
+                  }}
+                  placeholder="New name…"
+                  style={{ ...field, maxWidth: 320 }}
+                />
+                <button
+                  onClick={doRename}
+                  disabled={busy || !renameVal.trim() || renameVal.trim() === (rec.name || "")}
+                  className="mono"
+                  style={{
+                    background: "transparent",
+                    color: TEAL,
+                    border: `1px solid ${TEAL}`,
+                    borderRadius: 4,
+                    padding: "6px 16px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: 0.5,
+                    cursor:
+                      busy || !renameVal.trim() || renameVal.trim() === (rec.name || "")
+                        ? "default"
+                        : "pointer",
+                    textTransform: "uppercase",
+                    opacity:
+                      busy || !renameVal.trim() || renameVal.trim() === (rec.name || "")
+                        ? 0.45
+                        : 1,
+                  }}
+                >
+                  {busy ? "Working…" : "Rename"}
+                </button>
+              </div>
+              {rec.kind === "brand" && (
+                <div className="mono" style={{ fontSize: 11, color: "#5e7170", marginTop: 6 }}>
+                  The slug updates to match.
+                </div>
+              )}
+            </div>
+          )}
+
           {/* impact preview */}
           <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 8 }}>
             Impact

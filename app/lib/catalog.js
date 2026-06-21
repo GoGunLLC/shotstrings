@@ -567,6 +567,7 @@ export async function getManageData() {
       ...b,
       kind: "brand",
       mergeable: true,
+      renamable: true,
       label: b.name,
       sub: b.slug,
       deps,
@@ -585,6 +586,7 @@ export async function getManageData() {
       ...m,
       kind: "model",
       mergeable: true,
+      renamable: true,
       label: m.name,
       sub: brandName.get(m.brand_id) || "—",
       deps,
@@ -599,6 +601,7 @@ export async function getManageData() {
       ...v,
       kind: "variant",
       mergeable: false, // tanks + per-tank pressures make merge ambiguous (v2)
+      renamable: false, // no name of its own — label is composed from model/caliber/barrel
       label: `${modelName.get(v.model_id) || "?"} · ${caliberName.get(v.caliber_id) || "?"}${
         v.barrel_length_in ? ` · ${v.barrel_length_in}"` : ""
       }`,
@@ -615,6 +618,7 @@ export async function getManageData() {
       ...p,
       kind: "projectile",
       mergeable: true,
+      renamable: true,
       label: `${p.name} · ${p.weight_grains} gr`,
       sub: [brandName.get(p.brand_id), caliberName.get(p.caliber_id)].filter(Boolean).join(" · "),
       deps,
@@ -629,6 +633,7 @@ export async function getManageData() {
       ...m,
       kind: "moderator",
       mergeable: true,
+      renamable: true,
       label: m.name,
       sub: brandName.get(m.brand_id) || "—",
       deps,
@@ -647,6 +652,7 @@ export async function getManageData() {
       ...c,
       kind: "caliber",
       mergeable: false, // reference data — delete only when nothing uses it
+      renamable: true,
       label: c.name,
       sub: null,
       deps,
@@ -674,6 +680,44 @@ const TABLE_BY_KIND = {
   moderator: "moderators",
   caliber: "calibers",
 };
+
+// Rename a catalog record's display name. Variants have no name of their own
+// (their label is composed from model/caliber/barrel), so they aren't renamable.
+// For brands we also regenerate the slug to keep it in step with the name.
+const RENAME_TABLE_BY_KIND = {
+  brand: "brands",
+  model: "airgun_models",
+  projectile: "projectiles",
+  moderator: "moderators",
+  caliber: "calibers",
+};
+
+export async function renameCatalogRecord(kind, id, newName) {
+  const table = RENAME_TABLE_BY_KIND[kind];
+  if (!table) return { error: `Rename isn't supported for ${kind}.` };
+
+  const name = String(newName ?? "").trim();
+  if (!name) return { error: "Name can't be empty." };
+
+  const supabase = getSupabaseClient();
+  const patch = { name };
+  if (kind === "brand") patch.slug = slugify(name);
+
+  const { error } = await supabase.from(table).update(patch).eq("id", id);
+  if (error) {
+    // 23505 = unique_violation (caliber name, or brand slug).
+    if (error.code === "23505") {
+      return {
+        error:
+          kind === "brand"
+            ? "Another brand already maps to that name (slug clash) — pick a different name."
+            : "Another record already uses that name.",
+      };
+    }
+    return { error: error.message };
+  }
+  return {};
+}
 
 // Merge `sourceId` into `targetId` via the atomic admin_merge_* function.
 // Returns { data: <counts moved>, error }.
