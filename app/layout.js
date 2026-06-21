@@ -1,5 +1,6 @@
 import "./globals.css";
 import { Archivo, Space_Mono } from "next/font/google";
+import FeedbackWidget from "./components/FeedbackWidget";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -24,7 +25,10 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${archivo.variable} ${spaceMono.variable}`}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <FeedbackWidget />
+      </body>
     </html>
   );
 }

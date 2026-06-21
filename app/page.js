@@ -1343,6 +1343,14 @@ function Feed({ guns, selected, onToggle, rail }) {
 }
 
 function CompareBar({ count, onDisplay, onClear }) {
+  // While this full-width bar is visible, lift any fixed bottom-right launcher
+  // (the feedback pill) above it so the Display Graph button isn't covered.
+  // Restored automatically when the bar unmounts.
+  useEffect(() => {
+    document.documentElement.style.setProperty("--ss-bottombar", "74px");
+    return () => document.documentElement.style.removeProperty("--ss-bottombar");
+  }, []);
+
   return (
     <div
       style={{
