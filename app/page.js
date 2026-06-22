@@ -319,7 +319,7 @@ export default function Home() {
         .map((v) => Math.round(v * 10) / 10)
         .concat(new Array(maxShots - ys.length).fill(null));
       return {
-        label: g.brand + " " + g.model,
+        label: g.brand + " " + g.model + (g.variantName ? " · " + g.variantName : ""),
         data,
         borderColor: g.color,
         backgroundColor: g.color,
@@ -596,7 +596,7 @@ export default function Home() {
                           textTransform: "uppercase",
                         }}
                       >
-                        {g.brand} {g.model} <span style={{ color: TEAL }}>{g.calDisp}</span>
+                        {g.brand} {g.model}{g.variantName ? ` · ${g.variantName}` : ""} <span style={{ color: TEAL }}>{g.calDisp}</span>
                       </div>
                       <button
                         onClick={() => toggle(g.id)}
@@ -809,7 +809,7 @@ function SearchBox({ query, setQuery, matches, onPick, placeholder }) {
                     letterSpacing: 0.3,
                   }}
                 >
-                  {m.brand} {m.model}
+                  {m.brand} {m.model}{m.variantName ? ` · ${m.variantName}` : ""}
                 </div>
                 <div
                   className="mono"
@@ -1222,7 +1222,7 @@ function FeedCard({ g, selected, onToggle }) {
               lineHeight: 1.15,
             }}
           >
-            {g.brand} {g.model}
+            {g.brand} {g.model}{g.variantName ? ` · ${g.variantName}` : ""}
           </div>
           <div
             className="mono"

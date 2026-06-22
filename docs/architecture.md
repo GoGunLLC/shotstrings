@@ -128,6 +128,7 @@ One model → many variants (caliber + barrel + bottle).
 | `id` | bigint PK | |
 | `model_id` | → airgun_models | |
 | `caliber_id` | → calibers | |
+| `name` | text | nullable — manufacturer's edition label (e.g. "Sniper", "Compact"); a "Sniper" version is usually just a longer barrel |
 | `barrel_length_in` | numeric | nullable |
 | `reg_pressure_psi` | numeric | nullable |
 | `status` | enum(`pending`,`approved`) | |

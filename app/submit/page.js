@@ -400,6 +400,7 @@ export default function SubmitPage() {
                   <option key={v.id} value={v.id}>
                     {v.caliber?.name}
                     {v.barrel_length_in ? ` · ${v.barrel_length_in}" barrel` : ""}
+                    {v.name ? ` · ${v.name}` : ""}
                   </option>
                 ))}
               </select>

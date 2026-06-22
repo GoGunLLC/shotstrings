@@ -71,7 +71,7 @@ export async function getCatalog() {
       supabase
         .from("airgun_variants")
         .select(
-          `id, model_id, caliber_id, barrel_length_in, reg_pressure_psi, is_regulated,
+          `id, model_id, caliber_id, name, barrel_length_in, reg_pressure_psi, is_regulated,
            caliber:calibers ( id, name ),
            tanks:airgun_tanks ( id, role, position, volume_cc, rated_pressure_psi )`
         )
@@ -217,7 +217,7 @@ export async function getMyDashboard(userId) {
       `id, status, created_at, approved_at, projectile_weight_grains,
        caliber:calibers ( name ),
        variant:airgun_variants (
-         barrel_length_in,
+         name, barrel_length_in,
          model:airgun_models ( name, brand:brands ( name ) )
        ),
        projectile:projectiles ( name ),
@@ -247,6 +247,7 @@ export async function getMyDashboard(userId) {
       createdAt: s.created_at,
       brand: s.variant?.model?.brand?.name ?? "",
       model: s.variant?.model?.name ?? "",
+      variantName: s.variant?.name ?? null,
       caliber: s.caliber?.name ?? "",
       projectile: s.projectile?.name ?? "Custom / unlisted",
       grains: s.projectile_weight_grains,
@@ -300,7 +301,7 @@ export async function getAllSubmissions(filter = "pending") {
        temperature_c, altitude_ft, chrono_distance_in,
        caliber:calibers ( name ),
        variant:airgun_variants (
-         id, barrel_length_in,
+         id, name, barrel_length_in,
          model:airgun_models ( name, brand:brands ( name ) )
        ),
        projectile:projectiles ( name ),
@@ -333,6 +334,7 @@ export async function getAllSubmissions(filter = "pending") {
     caliber: s.caliber?.name ?? "",
     brand: s.variant?.model?.brand?.name ?? "",
     model: s.variant?.model?.name ?? "",
+    variantName: s.variant?.name ?? null,
     projectile: s.projectile?.name ?? "Custom / unlisted",
     submitter: s.submitter?.username ?? "—",
     video: s.video || null,
@@ -427,12 +429,14 @@ export function addModel({ brandId, name, powerPlant }) {
 
 // Variant insert, plus an optional tank in one go (tanks are admin-only, no
 // status column — inserted separately).
-export async function addVariant({ modelId, caliberId, barrelLengthIn, regPressurePsi, isRegulated, tank }) {
+export async function addVariant({ modelId, caliberId, name, barrelLengthIn, regPressurePsi, isRegulated, tank }) {
+  const trimmedName = typeof name === "string" ? name.trim() : "";
   const res = await adminInsert(
     "airgun_variants",
     {
       model_id: modelId,
       caliber_id: caliberId,
+      name: trimmedName || null,
       barrel_length_in: barrelLengthIn ?? null,
       reg_pressure_psi: regPressurePsi ?? null,
       is_regulated: !!isRegulated,
@@ -533,7 +537,7 @@ export async function getManageData() {
       supabase.from("airgun_models").select("id, name, brand_id, power_plant, status").order("name"),
       supabase
         .from("airgun_variants")
-        .select("id, model_id, caliber_id, barrel_length_in, reg_pressure_psi, is_regulated, status")
+        .select("id, model_id, caliber_id, name, barrel_length_in, reg_pressure_psi, is_regulated, status")
         .order("id"),
       supabase
         .from("projectiles")
@@ -634,10 +638,10 @@ export async function getManageData() {
       ...v,
       kind: "variant",
       mergeable: false, // tanks + per-tank pressures make merge ambiguous (v2)
-      renamable: false, // no name of its own — label is composed from model/caliber/barrel
+      renamable: false, // name is optional; edit it via the details panel, not the rename flow
       label: `${modelName.get(v.model_id) || "?"} · ${caliberName.get(v.caliber_id) || "?"}${
         v.barrel_length_in ? ` · ${v.barrel_length_in}"` : ""
-      }`,
+      }${v.name ? ` · ${v.name}` : ""}`,
       sub: null,
       deps,
       shotStrings: n(ssByVariant, v.id),
@@ -757,7 +761,7 @@ export async function renameCatalogRecord(kind, id, newName) {
 const EDIT_COLUMNS = {
   brand: ["name"],
   model: ["name", "power_plant", "brand_id"],
-  variant: ["model_id", "caliber_id", "barrel_length_in", "is_regulated", "reg_pressure_psi"],
+  variant: ["model_id", "caliber_id", "name", "barrel_length_in", "is_regulated", "reg_pressure_psi"],
   projectile: ["name", "type", "brand_id", "caliber_id", "weight_grains", "head_diameter_mm"],
   moderator: ["name", "brand_id"],
   caliber: ["name", "nominal_inches", "nominal_mm"],
@@ -778,9 +782,15 @@ export async function updateCatalogRecord(kind, id, patchIn) {
 
   if ("name" in patch) {
     const nm = String(patch.name ?? "").trim();
-    if (!nm) return { error: "Name can't be empty." };
-    patch.name = nm;
-    if (kind === "brand") patch.slug = slugify(nm);
+    // Variant names are optional — clearing the field stores null. Every other
+    // kind's name is NOT NULL, so an empty value is an error there.
+    if (!nm) {
+      if (kind === "variant") patch.name = null;
+      else return { error: "Name can't be empty." };
+    } else {
+      patch.name = nm;
+      if (kind === "brand") patch.slug = slugify(nm);
+    }
   }
 
   if (Object.keys(patch).length === 0) return { error: "Nothing to update." };

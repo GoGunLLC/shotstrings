@@ -122,7 +122,7 @@ export default function Embed() {
         .map((v) => (v == null ? null : Math.round(v * 10) / 10))
         .concat(new Array(maxShots - ys.length).fill(null));
       return {
-        label: g.brand + " " + g.model,
+        label: g.brand + " " + g.model + (g.variantName ? " · " + g.variantName : ""),
         data,
         borderColor: g.color,
         backgroundColor: g.color,

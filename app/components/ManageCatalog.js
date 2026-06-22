@@ -21,6 +21,7 @@ const EDIT_SPECS = {
   variant: [
     { key: "model_id", label: "Model", type: "ref", ref: "models", required: true },
     { key: "caliber_id", label: "Caliber", type: "ref", ref: "calibers", required: true },
+    { key: "name", label: "Name", type: "text" },
     { key: "barrel_length_in", label: "Barrel length (in)", type: "number" },
     { key: "is_regulated", label: "Regulated", type: "bool" },
     { key: "reg_pressure_psi", label: "Reg pressure (psi)", type: "number" },

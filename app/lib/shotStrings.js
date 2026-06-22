@@ -78,6 +78,7 @@ function mapRow(row, index) {
     id: row.id,
     brand: row.variant?.model?.brand?.name ?? "",
     model: row.variant?.model?.name ?? "",
+    variantName: row.variant?.name ?? null,
     cal,
     calDisp: "·" + cal.replace(".", ""),
     fill: startPsi ? `${Math.round(Number(startPsi) / 14.5038)} bar` : "PCP",
@@ -125,6 +126,7 @@ export async function getShotStrings() {
        projectile_weight_grains,
        caliber:calibers ( name ),
        variant:airgun_variants (
+         name,
          barrel_length_in,
          tanks:airgun_tanks ( volume_cc ),
          model:airgun_models ( name, brand:brands ( name ) )

@@ -240,7 +240,8 @@ function ReviewQueue({ catalog }) {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "#0b0d10" }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>
-                    {[r.brand, r.model].filter(Boolean).join(" ") || "Unknown gun"}{" "}
+                    {[r.brand, r.model].filter(Boolean).join(" ") || "Unknown gun"}
+                    {r.variantName ? ` · ${r.variantName}` : ""}{" "}
                     <span className="mono" style={{ color: TEAL, fontSize: 12 }}>{r.caliber}</span>
                   </div>
                   <div className="mono" style={{ fontSize: 11, color: "#5e7170", marginTop: 3 }}>
@@ -427,7 +428,7 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
           <select value={variantId} onChange={(e) => setVariantId(e.target.value)} disabled={!modelId} style={field}>
             <option value="">—</option>
             {variants.map((v) => (
-              <option key={v.id} value={v.id}>{v.caliber?.name}{v.barrel_length_in ? ` · ${v.barrel_length_in}"` : ""}</option>
+              <option key={v.id} value={v.id}>{v.caliber?.name}{v.barrel_length_in ? ` · ${v.barrel_length_in}"` : ""}{v.name ? ` · ${v.name}` : ""}</option>
             ))}
           </select>
         </L>
@@ -651,6 +652,7 @@ function VariantForm({ catalog, onChanged }) {
   const [brandId, setBrandId] = useState("");
   const [modelId, setModelId] = useState("");
   const [caliberId, setCaliberId] = useState("");
+  const [name, setName] = useState("");
   const [barrel, setBarrel] = useState("");
   const [reg, setReg] = useState(false);
   const [regPsi, setRegPsi] = useState("");
@@ -669,12 +671,13 @@ function VariantForm({ catalog, onChanged }) {
               {
                 modelId: Number(modelId),
                 caliberId: Number(caliberId),
+                name: name.trim() || null,
                 barrelLengthIn: barrel === "" ? null : Number(barrel),
                 isRegulated: reg,
                 regPressurePsi: reg && regPsi !== "" ? Number(regPsi) : null,
                 tank: { volumeCc: vol === "" ? null : Number(vol), role, ratedPressurePsi: rated === "" ? null : Number(rated) },
               },
-              () => { setBarrel(""); setReg(false); setRegPsi(""); setVol(""); setRated(""); }
+              () => { setName(""); setBarrel(""); setReg(false); setRegPsi(""); setVol(""); setRated(""); }
             ).then(onChanged);
         }}
       >
@@ -699,6 +702,7 @@ function VariantForm({ catalog, onChanged }) {
           </L>
         </Grid>
         <Grid>
+          <L label="Name"><input value={name} onChange={(e) => setName(e.target.value)} placeholder='optional, e.g. "Sniper"' style={field} /></L>
           <L label="Barrel length"><UnitField value={barrel} onChange={setBarrel} units={DISTANCE_UNITS} placeholder="optional" /></L>
           <L label="Regulated">
             <label style={{ display: "flex", alignItems: "center", gap: 8, height: 38, color: "#cdd2d8", fontSize: 13 }}>

@@ -217,7 +217,8 @@ export default function DashboardPage() {
                   >
                     <div>
                       <div style={{ fontSize: 13.5, fontWeight: 600 }}>
-                        {[s.brand, s.model].filter(Boolean).join(" ") || "Unknown gun"}{" "}
+                        {[s.brand, s.model].filter(Boolean).join(" ") || "Unknown gun"}
+                        {s.variantName ? ` · ${s.variantName}` : ""}{" "}
                         <span className="mono" style={{ color: TEAL, fontSize: 12 }}>
                           {s.caliber}
                         </span>
