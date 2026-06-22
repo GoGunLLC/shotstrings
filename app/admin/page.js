@@ -637,7 +637,7 @@ function VariantForm({ catalog, onChanged }) {
                 caliberId: Number(caliberId),
                 barrelLengthIn: barrel === "" ? null : Number(barrel),
                 isRegulated: reg,
-                regPressurePsi: regPsi === "" ? null : Number(regPsi),
+                regPressurePsi: reg && regPsi !== "" ? Number(regPsi) : null,
                 tank: { volumeCc: vol === "" ? null : Number(vol), role, ratedPressurePsi: rated === "" ? null : Number(rated) },
               },
               () => { setBarrel(""); setReg(false); setRegPsi(""); setVol(""); setRated(""); }
@@ -668,10 +668,14 @@ function VariantForm({ catalog, onChanged }) {
           <L label="Barrel length"><UnitField value={barrel} onChange={setBarrel} units={DISTANCE_UNITS} placeholder="optional" /></L>
           <L label="Regulated">
             <label style={{ display: "flex", alignItems: "center", gap: 8, height: 38, color: "#cdd2d8", fontSize: 13 }}>
-              <input type="checkbox" checked={reg} onChange={(e) => setReg(e.target.checked)} /> regulated
+              <input
+                type="checkbox"
+                checked={reg}
+                onChange={(e) => { setReg(e.target.checked); if (!e.target.checked) setRegPsi(""); }}
+              /> regulated
             </label>
           </L>
-          <L label="Reg pressure"><UnitField value={regPsi} onChange={setRegPsi} units={PRESSURE_UNITS} placeholder="optional" /></L>
+          {reg && <L label="Reg pressure"><UnitField value={regPsi} onChange={setRegPsi} units={PRESSURE_UNITS} placeholder="optional" /></L>}
         </Grid>
         <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase", margin: "4px 0 10px" }}>
           Tank (volume needed for air-efficiency math)
