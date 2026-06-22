@@ -11,6 +11,10 @@ import SiteNav from "./components/SiteNav";
 const MONO = "'Space Mono', ui-monospace, monospace";
 const TEAL = "#2fb8a0";
 
+// Mobile graph: how much of the bottom sheet stays visible when collapsed
+// (the grab handle + the compact legend strip).
+const SHEET_PEEK = 116;
+
 const METRICS = [
   { key: "vel", label: "VELOCITY" },
   { key: "fpe", label: "ENERGY" },
@@ -85,6 +89,10 @@ export default function Home() {
   });
   const [chartHeight, setChartHeight] = useState(330); // px, drag-resizable
   const [showShare, setShowShare] = useState(false); // share modal
+  const [sheetOpen, setSheetOpen] = useState(false); // mobile graph: sheet expanded?
+  const [sheetDrag, setSheetDrag] = useState(null); // live translateY (px) mid-drag
+  const sheetRef = useRef(null);
+  const sheetGesture = useRef(null);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 760px)");
@@ -263,6 +271,12 @@ export default function Home() {
     if (showCompare && selected.length === 0) closeGraph();
   }, [showCompare, selected.length, closeGraph]);
 
+  // Leaving graph mode resets the mobile sheet so it reopens collapsed
+  // (graph-first) next time.
+  useEffect(() => {
+    if (!showCompare) setSheetOpen(false);
+  }, [showCompare]);
+
   // Filter option lists, derived from the loaded data.
   const options = useMemo(() => {
     const uniq = (arr) => Array.from(new Set(arr.filter((x) => x != null && x !== "")));
@@ -315,6 +329,13 @@ export default function Home() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
+    // The mobile and desktop layouts each mount their own canvas; if we crossed
+    // the breakpoint, drop the chart bound to the old (now detached) one.
+    if (chartRef.current && chartRef.current.canvas !== canvas) {
+      chartRef.current.destroy();
+      chartRef.current = null;
+    }
+
     const maxShots = selGuns.reduce((m, g) => Math.max(m, g.shots), 0);
     const labels = Array.from({ length: maxShots }, (_, i) => i + 1);
     const getArr = (g) => (metric === "vel" ? g.vels : metric === "fpe" ? g.fpe : g.devs);
@@ -356,9 +377,43 @@ export default function Home() {
         options: chartOptions(yTitle),
       });
     }
-  }, [selGuns, metric, showCompare]);
+  }, [selGuns, metric, showCompare, isMobile]);
 
   useEffect(() => () => chartRef.current && chartRef.current.destroy(), []);
+
+  // ---- Mobile bottom sheet drag/tap ----
+  // Tapping the handle toggles between peek and expanded; dragging snaps to
+  // whichever point is nearer on release.
+  const onSheetDown = (e) => {
+    const h = sheetRef.current ? sheetRef.current.clientHeight : 0;
+    const closed = Math.max(0, h - SHEET_PEEK);
+    sheetGesture.current = {
+      startY: e.clientY,
+      base: sheetOpen ? 0 : closed,
+      cur: sheetOpen ? 0 : closed,
+      closed,
+      moved: false,
+    };
+    setSheetDrag(sheetGesture.current.base);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
+  };
+  const onSheetMove = (e) => {
+    const g = sheetGesture.current;
+    if (!g) return;
+    const dy = e.clientY - g.startY;
+    if (Math.abs(dy) > 4) g.moved = true;
+    g.cur = Math.min(g.closed, Math.max(0, g.base + dy));
+    setSheetDrag(g.cur);
+  };
+  const onSheetUp = (e) => {
+    const g = sheetGesture.current;
+    sheetGesture.current = null;
+    e.currentTarget.releasePointerCapture?.(e.pointerId);
+    setSheetDrag(null);
+    if (!g) return;
+    if (!g.moved) setSheetOpen((o) => !o);
+    else setSheetOpen(g.cur < g.closed / 2);
+  };
 
   // Keep the canvas fitted when the height handle is dragged.
   useEffect(() => {
@@ -442,8 +497,236 @@ export default function Home() {
         </div>
       )}
 
-      {/* ---------------- GRAPH MODE (split view) ---------------- */}
-      {showCompare && (
+      {/* ---------------- GRAPH MODE — MOBILE (full-screen + bottom sheet) ---------------- */}
+      {showCompare && isMobile && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 50,
+            background: "#0a0c0e",
+            display: "flex",
+            flexDirection: "column",
+          }}
+        >
+          {/* top bar */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "12px 14px",
+              borderBottom: "1px solid #181b1f",
+              flex: "0 0 auto",
+            }}
+          >
+            <button
+              onClick={closeGraph}
+              className="mono"
+              aria-label="Back"
+              style={{
+                background: "transparent",
+                color: "#cdd2d8",
+                border: "1px solid #23272d",
+                borderRadius: 5,
+                padding: "6px 11px",
+                fontSize: 11,
+                letterSpacing: 1,
+                cursor: "pointer",
+                textTransform: "uppercase",
+              }}
+            >
+              ← Back
+            </button>
+            <div className="mono" style={{ fontSize: 10, letterSpacing: 2, color: "#5e7170" }}>
+              COMPARISON
+            </div>
+            <button
+              onClick={() => setShowShare(true)}
+              disabled={!selGuns.length}
+              aria-label="Share or embed this graph"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                background: "transparent",
+                border: "1px solid #23272d",
+                borderRadius: 5,
+                color: selGuns.length ? "#cdd2d8" : "#3f474a",
+                padding: "6px 11px",
+                cursor: selGuns.length ? "pointer" : "not-allowed",
+              }}
+            >
+              <svg viewBox="0 0 24 24" style={{ width: 15, height: 15, fill: "none", stroke: "currentColor", strokeWidth: 2, strokeLinecap: "round", strokeLinejoin: "round" }}>
+                <circle cx="18" cy="5" r="3" />
+                <circle cx="6" cy="12" r="3" />
+                <circle cx="18" cy="19" r="3" />
+                <line x1="8.6" y1="13.5" x2="15.4" y2="17.5" />
+                <line x1="15.4" y1="6.5" x2="8.6" y2="10.5" />
+              </svg>
+            </button>
+          </div>
+
+          {/* metric toggle */}
+          <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px", flex: "0 0 auto" }}>
+            <div
+              className="mono"
+              style={{ display: "flex", border: "1px solid #23272d", borderRadius: 3, overflow: "hidden", fontSize: 11, letterSpacing: 1 }}
+            >
+              {METRICS.map((mt) => {
+                const on = metric === mt.key;
+                return (
+                  <span
+                    key={mt.key}
+                    onClick={() => setMetric(mt.key)}
+                    style={{
+                      padding: "7px 14px",
+                      cursor: "pointer",
+                      background: on ? TEAL : "transparent",
+                      color: on ? "#06100e" : "#7b8089",
+                      fontWeight: on ? 700 : 400,
+                    }}
+                  >
+                    {mt.label}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* chart — fills the space above the collapsed sheet */}
+          <div style={{ flex: "1 1 auto", minHeight: 0, position: "relative", padding: "6px 10px 0", marginBottom: SHEET_PEEK }}>
+            <canvas ref={canvasRef} />
+          </div>
+
+          {/* bottom sheet */}
+          <div
+            ref={sheetRef}
+            style={{
+              position: "absolute",
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: "86vh",
+              transform:
+                sheetDrag != null
+                  ? `translateY(${sheetDrag}px)`
+                  : sheetOpen
+                  ? "translateY(0)"
+                  : `translateY(calc(100% - ${SHEET_PEEK}px))`,
+              transition: sheetDrag != null ? "none" : "transform .3s ease",
+              background: "#0c0f12",
+              borderTop: "1px solid #2a2f35",
+              borderRadius: "16px 16px 0 0",
+              display: "flex",
+              flexDirection: "column",
+              zIndex: 6,
+            }}
+          >
+            {/* grab handle */}
+            <div
+              onPointerDown={onSheetDown}
+              onPointerMove={onSheetMove}
+              onPointerUp={onSheetUp}
+              style={{
+                padding: "10px 0 8px",
+                display: "flex",
+                justifyContent: "center",
+                cursor: "grab",
+                touchAction: "none",
+                flex: "0 0 auto",
+              }}
+            >
+              <span style={{ width: 42, height: 4, borderRadius: 3, background: "#3a4047" }} />
+            </div>
+
+            {/* legend strip (always visible — the peek) */}
+            <div
+              style={{
+                borderTop: "1px solid #181b1f",
+                borderBottom: "1px solid #181b1f",
+                padding: "10px 12px",
+                flex: "0 0 auto",
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr",
+                gap: "8px 12px",
+              }}
+            >
+              {selGuns.map((g) => (
+                <div key={g.id} style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: g.color, flex: "0 0 auto" }} />
+                  <span style={{ fontSize: 11, color: "#cdd2d8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {g.brand} {g.model}
+                  </span>
+                  <span className="mono" style={{ fontSize: 11, color: "#e7ebef", marginLeft: "auto", flex: "0 0 auto" }}>
+                    {metric === "vel" ? g.mv : metric === "fpe" ? g.afpe : g.sd}
+                    <span style={{ fontSize: 8, color: "#5e7170", marginLeft: 2 }}>
+                      {metric === "vel" ? "fps" : metric === "fpe" ? "ft·lb" : "sd"}
+                    </span>
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* scrollable body — full stats, search, filters, list */}
+            <div style={{ overflowY: "auto", padding: "14px 14px 60px", flex: "1 1 auto", WebkitOverflowScrolling: "touch" }}>
+              <div className="mono" style={{ fontSize: 9, letterSpacing: 2, color: "#5e7170", marginBottom: 10 }}>
+                SELECTED · FULL STATS
+              </div>
+              {selGuns.map((g) => (
+                <div key={g.id} style={{ border: "1px solid #181b1f", borderRadius: 6, padding: "12px 13px", marginBottom: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 11 }}>
+                    <span style={{ width: 9, height: 9, borderRadius: "50%", background: g.color, flex: "0 0 auto" }} />
+                    <div style={{ flex: 1, minWidth: 0, fontWeight: 800, letterSpacing: "-.3px", fontSize: 13, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {g.brand} {g.model}{g.variantName ? ` · ${g.variantName}` : ""} <span style={{ color: TEAL }}>{g.calDisp}</span>
+                    </div>
+                    <button
+                      onClick={() => toggle(g.id)}
+                      aria-label={`Remove ${g.brand} ${g.model} from graph`}
+                      className="mono"
+                      style={{ flex: "0 0 auto", background: "transparent", border: "1px solid #2a2f35", borderRadius: 4, color: "#7b8089", fontSize: 14, lineHeight: 1, padding: "2px 7px", cursor: "pointer" }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 14px" }}>
+                    <Stat label="AVG VEL" value={g.mv} unit=" fps" />
+                    <Stat label="STD DEV" value={g.sd} unit=" fps" accent />
+                    <Stat label="EXT SPREAD" value={g.es} unit=" fps" />
+                    <Stat label="SHOTS/FILL" value={g.shots} unit="" />
+                  </div>
+                </div>
+              ))}
+
+              <div className="mono" style={{ fontSize: 9, letterSpacing: 2, color: "#5e7170", margin: "16px 0 10px" }}>
+                ADD MORE
+              </div>
+              <SearchBox
+                query={query}
+                setQuery={setQuery}
+                matches={matches}
+                onPick={addSelected}
+                placeholder="Add an airgun…"
+              />
+              {guns.length > 0 && (
+                <Browse
+                  results={browseResults}
+                  total={guns.length}
+                  options={options}
+                  filters={filters}
+                  setFilters={setFilters}
+                  selected={selected}
+                  onToggle={toggle}
+                  rail
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ---------------- GRAPH MODE — DESKTOP (split view) ---------------- */}
+      {showCompare && !isMobile && (
         <div
           style={{
             display: isMobile ? "block" : "grid",
