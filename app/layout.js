@@ -17,10 +17,37 @@ const spaceMono = Space_Mono({
   display: "swap",
 });
 
+const SITE_URL = "https://shotstrings.com";
+const TITLE = "ShotStrings — Airgun shot string database";
+const DESCRIPTION =
+  "The largest database of real airgun shot strings. Search, compare, and verify airgun performance.";
+
 export const metadata = {
-  title: "ShotStrings — Airgun shot string database",
-  description:
-    "The largest database of real airgun shot strings. Search, compare, and verify airgun performance.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "ShotStrings",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "ShotStrings — the largest database of real airgun shot strings.",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/og-image.png"],
+  },
 };
 
 export default function RootLayout({ children }) {
