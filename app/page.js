@@ -10,6 +10,18 @@ import SiteNav from "./components/SiteNav";
 // tiny default and ignores any size you set. Use a literal font stack here.
 const MONO = "'Space Mono', ui-monospace, monospace";
 const TEAL = "#2fb8a0";
+const AMBER = "#d6a23e";
+
+// A proof link is only shown when it points at a real YouTube video. Seed/test
+// rows use placeholder ids (e.g. "DUMMY_huben", "SEEDvideo001"); a genuine
+// YouTube id is exactly 11 chars of [A-Za-z0-9_-]. Anything else is treated as
+// unverified — we render an amber "Unverified" tag instead of a dead link.
+function isVerifiedProof(video) {
+  const id = video?.ytId || null;
+  if (!id || !/^[A-Za-z0-9_-]{11}$/.test(id)) return false;
+  if (/^(DUMMY|SEED)/i.test(id)) return false;
+  return true;
+}
 
 // Mobile graph: how much of the bottom sheet stays visible when collapsed
 // (the grab handle + the compact legend strip). Sized so the enlarged,
@@ -1531,7 +1543,7 @@ function FeedCard({ g, selected, onToggle }) {
           }}
         >
           <span>{timeAgo(g.createdAt)}</span>
-          {g.video?.url && (
+          {isVerifiedProof(g.video) ? (
             <a
               href={g.video.url}
               target="_blank"
@@ -1541,6 +1553,10 @@ function FeedCard({ g, selected, onToggle }) {
             >
               WATCH PROOF ↗
             </a>
+          ) : (
+            <span style={{ color: AMBER, fontWeight: 700, letterSpacing: 1 }}>
+              UNVERIFIED
+            </span>
           )}
         </div>
       </div>
