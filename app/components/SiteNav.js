@@ -230,7 +230,7 @@ export default function SiteNav({ active }) {
       </div>
 
       {/* mobile hamburger */}
-      <div className="nav-hamburger" ref={mobileRef} style={{ position: "relative" }}>
+      <div className="nav-hamburger" ref={mobileRef}>
         <button
           onClick={() => setMobileOpen((o) => !o)}
           aria-label="Menu"
@@ -254,22 +254,83 @@ export default function SiteNav({ active }) {
           <span style={{ height: 2, width: "100%", background: "#cdd2d8", borderRadius: 2 }} />
         </button>
 
-        {mobileOpen && (
+        {/* dim backdrop behind the drawer */}
+        <div
+          onClick={() => setMobileOpen(false)}
+          aria-hidden="true"
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,.55)",
+            zIndex: 45,
+            opacity: mobileOpen ? 1 : 0,
+            pointerEvents: mobileOpen ? "auto" : "none",
+            transition: "opacity .28s ease",
+          }}
+        />
+
+        {/* slide-in drawer anchored to the left edge */}
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-hidden={!mobileOpen}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            bottom: 0,
+            width: "min(82vw, 320px)",
+            background: "#0e1013",
+            borderRight: "1px solid #23272d",
+            boxShadow: "18px 0 40px rgba(0,0,0,.5)",
+            zIndex: 50,
+            display: "flex",
+            flexDirection: "column",
+            overflowY: "auto",
+            transform: mobileOpen ? "translateX(0)" : "translateX(-100%)",
+            transition: "transform .28s ease",
+          }}
+        >
           <div
             style={{
-              position: "absolute",
-              top: 46,
-              right: 0,
-              minWidth: 220,
-              background: "#0e1013",
-              border: "1px solid #23272d",
-              borderRadius: 6,
-              overflow: "hidden",
-              zIndex: 40,
-              boxShadow: "0 18px 40px rgba(0,0,0,.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "17px 16px",
+              borderBottom: "1px solid #181b1f",
             }}
           >
-            <MobileLink href="/submit" label="Submit" active={active === "submit"} onNav={() => setMobileOpen(false)} />
+            <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+              <div
+                style={{
+                  width: 9,
+                  height: 9,
+                  borderRadius: "50%",
+                  background: TEAL,
+                  boxShadow: "0 0 7px 1px rgba(47,184,160,.85), inset 0 0 2px rgba(255,255,255,.5)",
+                }}
+              />
+              <div style={{ fontWeight: 800, letterSpacing: 4, fontSize: 13 }}>SHOTSTRINGS</div>
+            </div>
+            <button
+              onClick={() => setMobileOpen(false)}
+              aria-label="Close menu"
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#7b8089",
+                fontSize: 24,
+                lineHeight: 1,
+                cursor: "pointer",
+                padding: "0 4px",
+                fontFamily: "inherit",
+              }}
+            >
+              &times;
+            </button>
+          </div>
+
+          <MobileLink href="/submit" label="Submit" active={active === "submit"} onNav={() => setMobileOpen(false)} />
             {session && (
               <MobileLink href="/dashboard" label="Dashboard" active={active === "dashboard"} onNav={() => setMobileOpen(false)} />
             )}
@@ -394,9 +455,8 @@ export default function SiteNav({ active }) {
               )}
             </div>
           </div>
-        )}
+        </div>
       </div>
-    </div>
   );
 }
 

@@ -44,6 +44,8 @@ input::placeholder {
   }
   .nav-hamburger {
     display: block;
+    order: -1;
+    margin-right: 14px;
   }
   /* iOS Safari auto-zooms when a focused input's font-size is < 16px.
      Bump the search field to 16px on mobile to prevent that zoom. */
