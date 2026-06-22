@@ -85,6 +85,8 @@ const DEP_LABEL = {
   variants: "variant",
   tanks: "tank",
   shotStrings: "shot string",
+  // snake_case keys as returned by the admin_merge_* functions' jsonb result
+  shot_strings: "shot string",
 };
 
 function plural(n, word) {

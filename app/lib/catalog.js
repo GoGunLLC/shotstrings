@@ -637,7 +637,7 @@ export async function getManageData() {
     return {
       ...v,
       kind: "variant",
-      mergeable: false, // tanks + per-tank pressures make merge ambiguous (v2)
+      mergeable: true, // admin_merge_variant moves the source's tanks onto the target too (mvp_14)
       renamable: false, // name is optional; edit it via the details panel, not the rename flow
       label: `${modelName.get(v.model_id) || "?"} · ${caliberName.get(v.caliber_id) || "?"}${
         v.barrel_length_in ? ` · ${v.barrel_length_in}"` : ""
@@ -819,6 +819,7 @@ export async function updateCatalogRecord(kind, id, patchIn) {
 const MERGE_FN_BY_KIND = {
   brand: "admin_merge_brand",
   model: "admin_merge_model",
+  variant: "admin_merge_variant",
   projectile: "admin_merge_projectile",
   moderator: "admin_merge_moderator",
 };
