@@ -17,6 +17,7 @@ import {
   addVariant,
   addModerator,
   addProjectile,
+  addCaliber,
   psiFromBar,
   barFromPsi,
   inFromCm,
@@ -510,12 +511,45 @@ function CatalogAdmin({ catalog, onChanged }) {
         Entries you add here are saved <strong style={{ color: TEAL }}>approved</strong> and appear in the
         submission form immediately.
       </p>
+      <CaliberForm onChanged={onChanged} />
       <BrandForm onChanged={onChanged} />
       <ModelForm catalog={catalog} onChanged={onChanged} />
       <VariantForm catalog={catalog} onChanged={onChanged} />
       <ModeratorForm catalog={catalog} onChanged={onChanged} />
       <ProjectileForm catalog={catalog} onChanged={onChanged} />
     </div>
+  );
+}
+
+function CaliberForm({ onChanged }) {
+  const [name, setName] = useState("");
+  const [inches, setInches] = useState("");
+  const [mm, setMm] = useState("");
+  const { busy, msg, run } = useAdder(addCaliber);
+  return (
+    <Card title="Caliber">
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (name.trim())
+            run(
+              {
+                name: name.trim(),
+                nominalInches: inches === "" ? null : Number(inches),
+                nominalMm: mm === "" ? null : Number(mm),
+              },
+              () => { setName(""); setInches(""); setMm(""); }
+            ).then(onChanged);
+        }}
+      >
+        <Grid>
+          <L label="Name"><input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. .35" style={field} /></L>
+          <L label="Nominal (in)"><input type="number" step="any" value={inches} onChange={(e) => setInches(e.target.value)} placeholder="optional, e.g. 0.35" style={field} /></L>
+          <L label="Nominal (mm)"><input type="number" step="any" value={mm} onChange={(e) => setMm(e.target.value)} placeholder="optional, e.g. 9.0" style={field} /></L>
+        </Grid>
+        <div style={{ marginTop: 6 }}><SaveBtn busy={busy} /><Status msg={msg} /></div>
+      </form>
+    </Card>
   );
 }
 

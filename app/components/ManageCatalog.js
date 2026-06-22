@@ -5,8 +5,50 @@ import {
   getManageData,
   mergeCatalogRecord,
   deleteCatalogRecord,
-  renameCatalogRecord,
+  updateCatalogRecord,
 } from "../lib/catalog";
+
+// Editable fields per record kind, rendered in the Edit panel. `key` is the DB
+// column; `type` drives the input. `ref` points at one of the catalog lists for
+// a dropdown. `required` blocks save when empty (mirrors the NOT NULL columns).
+const EDIT_SPECS = {
+  brand: [{ key: "name", label: "Name", type: "text", required: true }],
+  model: [
+    { key: "name", label: "Name", type: "text", required: true },
+    { key: "power_plant", label: "Power plant", type: "select", required: true, options: ["pcp", "spring", "gas_ram", "co2", "multi_pump"] },
+    { key: "brand_id", label: "Brand", type: "ref", ref: "brands", required: true },
+  ],
+  variant: [
+    { key: "model_id", label: "Model", type: "ref", ref: "models", required: true },
+    { key: "caliber_id", label: "Caliber", type: "ref", ref: "calibers", required: true },
+    { key: "barrel_length_in", label: "Barrel length (in)", type: "number" },
+    { key: "is_regulated", label: "Regulated", type: "bool" },
+    { key: "reg_pressure_psi", label: "Reg pressure (psi)", type: "number" },
+  ],
+  projectile: [
+    { key: "name", label: "Name", type: "text", required: true },
+    { key: "type", label: "Type", type: "select", required: true, options: ["pellet", "slug", "round_ball"] },
+    { key: "brand_id", label: "Brand", type: "ref", ref: "brands", required: true },
+    { key: "caliber_id", label: "Caliber", type: "ref", ref: "calibers", required: true },
+    { key: "weight_grains", label: "Weight (grains)", type: "number", required: true },
+    { key: "head_diameter_mm", label: "Head dia (mm)", type: "number" },
+  ],
+  moderator: [
+    { key: "name", label: "Name", type: "text", required: true },
+    { key: "brand_id", label: "Brand", type: "ref", ref: "brands", required: true },
+  ],
+  caliber: [
+    { key: "name", label: "Name", type: "text", required: true },
+    { key: "nominal_inches", label: "Nominal (in)", type: "number" },
+    { key: "nominal_mm", label: "Nominal (mm)", type: "number" },
+  ],
+};
+
+// Label for a dropdown option. Models read better with their brand prefixed.
+function optionLabel(ref, item) {
+  if (ref === "models" && item.sub) return `${item.sub} · ${item.label}`;
+  return item.label;
+}
 
 const TEAL = "#2fb8a0";
 const AMBER = "#e0a93f";
@@ -158,6 +200,7 @@ export default function ManageCatalog() {
             key={`${rec.kind}-${rec.id}`}
             rec={rec}
             siblings={records}
+            lists={data}
             open={openId === rec.id}
             onToggle={() => setOpenId(openId === rec.id ? null : rec.id)}
             onDone={(text) => {
@@ -178,9 +221,8 @@ export default function ManageCatalog() {
   );
 }
 
-function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
+function RecordRow({ rec, siblings, lists, open, onToggle, onDone, onError }) {
   const [mergeTarget, setMergeTarget] = useState("");
-  const [renameVal, setRenameVal] = useState(rec.name || "");
   const [busy, setBusy] = useState(false);
 
   // Valid merge targets: same entity, not itself.
@@ -210,16 +252,6 @@ function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
           .join(", ")
       : "";
     onDone(`Merged "${rec.label}" into "${target.label}".${moved ? ` Moved ${moved}.` : ""}`);
-  }
-
-  async function doRename() {
-    const next = renameVal.trim();
-    if (!next || next === (rec.name || "")) return;
-    setBusy(true);
-    const { error } = await renameCatalogRecord(rec.kind, rec.id, next);
-    setBusy(false);
-    if (error) return onError(`Rename failed: ${error}`);
-    onDone(`Renamed "${rec.name}" to "${next}".`);
   }
 
   async function doDelete() {
@@ -270,55 +302,9 @@ function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
 
       {open && (
         <div style={{ padding: "14px 16px", borderTop: "1px solid #141619", background: "#080a0c" }}>
-          {/* rename */}
-          {rec.renamable && (
-            <div style={{ marginBottom: 18 }}>
-              <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
-                Rename
-              </label>
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <input
-                  value={renameVal}
-                  onChange={(e) => setRenameVal(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") doRename();
-                  }}
-                  placeholder="New name…"
-                  style={{ ...field, maxWidth: 320 }}
-                />
-                <button
-                  onClick={doRename}
-                  disabled={busy || !renameVal.trim() || renameVal.trim() === (rec.name || "")}
-                  className="mono"
-                  style={{
-                    background: "transparent",
-                    color: TEAL,
-                    border: `1px solid ${TEAL}`,
-                    borderRadius: 4,
-                    padding: "6px 16px",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    letterSpacing: 0.5,
-                    cursor:
-                      busy || !renameVal.trim() || renameVal.trim() === (rec.name || "")
-                        ? "default"
-                        : "pointer",
-                    textTransform: "uppercase",
-                    opacity:
-                      busy || !renameVal.trim() || renameVal.trim() === (rec.name || "")
-                        ? 0.45
-                        : 1,
-                  }}
-                >
-                  {busy ? "Working…" : "Rename"}
-                </button>
-              </div>
-              {rec.kind === "brand" && (
-                <div className="mono" style={{ fontSize: 11, color: "#5e7170", marginTop: 6 }}>
-                  The slug updates to match.
-                </div>
-              )}
-            </div>
+          {/* edit */}
+          {EDIT_SPECS[rec.kind] && (
+            <EditPanel rec={rec} lists={lists} onDone={onDone} onError={onError} />
           )}
 
           {/* impact preview */}
@@ -402,6 +388,136 @@ function RecordRow({ rec, siblings, open, onToggle, onDone, onError }) {
             )}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// Inline editor for a single record. Fields come from EDIT_SPECS[rec.kind].
+// State is keyed by DB column; values are kept as strings (or booleans) and
+// coerced to the right type on save before handing off to updateCatalogRecord.
+function EditPanel({ rec, lists, onDone, onError }) {
+  const spec = EDIT_SPECS[rec.kind] || [];
+
+  function initial() {
+    const o = {};
+    for (const f of spec) {
+      const v = rec[f.key];
+      o[f.key] = f.type === "bool" ? !!v : v == null ? "" : String(v);
+    }
+    return o;
+  }
+
+  const [vals, setVals] = useState(initial);
+  const [busy, setBusy] = useState(false);
+
+  // Re-seed when the row identity changes (e.g. after a reload).
+  useEffect(() => {
+    setVals(initial());
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rec.kind, rec.id]);
+
+  function set(key, v) {
+    setVals((s) => ({ ...s, [key]: v }));
+  }
+
+  function buildPatch() {
+    const patch = {};
+    for (const f of spec) {
+      const raw = vals[f.key];
+      if (f.type === "number" || f.type === "ref") {
+        patch[f.key] = raw === "" || raw == null ? null : Number(raw);
+      } else if (f.type === "bool") {
+        patch[f.key] = !!raw;
+      } else {
+        patch[f.key] = typeof raw === "string" ? raw.trim() : raw;
+      }
+    }
+    return patch;
+  }
+
+  async function save() {
+    const patch = buildPatch();
+    for (const f of spec) {
+      if (f.required && (patch[f.key] === null || patch[f.key] === "")) {
+        return onError(`${f.label} is required.`);
+      }
+      if (f.type === "number" && patch[f.key] !== null && !Number.isFinite(patch[f.key])) {
+        return onError(`${f.label} must be a number.`);
+      }
+    }
+    setBusy(true);
+    const { error } = await updateCatalogRecord(rec.kind, rec.id, patch);
+    setBusy(false);
+    if (error) return onError(`Save failed: ${error}`);
+    onDone("Saved changes.");
+  }
+
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 8 }}>
+        Edit details
+      </label>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 12 }}>
+        {spec.map((f) => (
+          <div key={f.key}>
+            <label className="mono" style={{ display: "block", fontSize: 10.5, letterSpacing: 0.5, color: "#5e7170", textTransform: "uppercase", marginBottom: 5 }}>
+              {f.label}
+            </label>
+            {f.type === "bool" ? (
+              <label style={{ display: "flex", alignItems: "center", gap: 8, height: 38, color: "#cdd2d8", fontSize: 13 }}>
+                <input type="checkbox" checked={!!vals[f.key]} onChange={(e) => set(f.key, e.target.checked)} />
+                yes
+              </label>
+            ) : f.type === "select" ? (
+              <select value={vals[f.key]} onChange={(e) => set(f.key, e.target.value)} style={field}>
+                {f.options.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+            ) : f.type === "ref" ? (
+              <select value={vals[f.key]} onChange={(e) => set(f.key, e.target.value)} style={field}>
+                <option value="">—</option>
+                {((lists && lists[f.ref]) || []).map((item) => (
+                  <option key={item.id} value={item.id}>{optionLabel(f.ref, item)}</option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type={f.type === "number" ? "number" : "text"}
+                step={f.type === "number" ? "any" : undefined}
+                value={vals[f.key]}
+                onChange={(e) => set(f.key, e.target.value)}
+                style={field}
+              />
+            )}
+          </div>
+        ))}
+      </div>
+      <button
+        onClick={save}
+        disabled={busy}
+        className="mono"
+        style={{
+          background: "transparent",
+          color: TEAL,
+          border: `1px solid ${TEAL}`,
+          borderRadius: 4,
+          padding: "6px 16px",
+          fontSize: 11,
+          fontWeight: 700,
+          letterSpacing: 0.5,
+          cursor: busy ? "default" : "pointer",
+          textTransform: "uppercase",
+          opacity: busy ? 0.45 : 1,
+        }}
+      >
+        {busy ? "Saving…" : "Save changes"}
+      </button>
+      {rec.kind === "brand" && (
+        <span className="mono" style={{ fontSize: 11, color: "#5e7170", marginLeft: 12 }}>
+          The slug updates to match the name.
+        </span>
       )}
     </div>
   );

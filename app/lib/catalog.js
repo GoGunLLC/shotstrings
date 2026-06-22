@@ -474,6 +474,31 @@ export function addProjectile({ brandId, name, type, caliberId, weightGrains, he
   );
 }
 
+// Calibers are reference data — the table has no status/created_by columns, so
+// this inserts directly rather than going through adminInsert. `name` is unique.
+export async function addCaliber({ name, nominalInches, nominalMm }) {
+  const supabase = getSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+  const { data, error } = await supabase
+    .from("calibers")
+    .insert({
+      name,
+      nominal_inches: nominalInches ?? null,
+      nominal_mm: nominalMm ?? null,
+    })
+    .select("id, name")
+    .single();
+  if (error) {
+    // 23505 = unique_violation on the caliber name.
+    if (error.code === "23505") return { error: "A caliber with that name already exists." };
+    return { error: error.message };
+  }
+  return { data };
+}
+
 // ===========================================================================
 // CATALOG MANAGE (admin) — review dependencies, merge duplicates, delete safe.
 // ===========================================================================
@@ -505,17 +530,17 @@ export async function getManageData() {
   const [brands, models, variants, projectiles, moderators, calibers, tanks, strings] =
     await Promise.all([
       supabase.from("brands").select("id, name, slug, status").order("name"),
-      supabase.from("airgun_models").select("id, name, brand_id, status").order("name"),
+      supabase.from("airgun_models").select("id, name, brand_id, power_plant, status").order("name"),
       supabase
         .from("airgun_variants")
-        .select("id, model_id, caliber_id, barrel_length_in, status")
+        .select("id, model_id, caliber_id, barrel_length_in, reg_pressure_psi, is_regulated, status")
         .order("id"),
       supabase
         .from("projectiles")
-        .select("id, name, brand_id, caliber_id, weight_grains, status")
+        .select("id, name, type, brand_id, caliber_id, weight_grains, head_diameter_mm, status")
         .order("name"),
       supabase.from("moderators").select("id, name, brand_id, status").order("name"),
-      supabase.from("calibers").select("id, name").order("name"),
+      supabase.from("calibers").select("id, name, nominal_inches, nominal_mm").order("name"),
       supabase.from("airgun_tanks").select("id, variant_id"),
       supabase
         .from("shot_strings")
@@ -722,6 +747,58 @@ export async function renameCatalogRecord(kind, id, newName) {
             : "Another record already uses that name.",
       };
     }
+    return { error: error.message };
+  }
+  return {};
+}
+
+// Editable columns per record kind. Anything not listed here can't be patched
+// from the Manage tab (e.g. status, ids, slug — slug is derived from name).
+const EDIT_COLUMNS = {
+  brand: ["name"],
+  model: ["name", "power_plant", "brand_id"],
+  variant: ["model_id", "caliber_id", "barrel_length_in", "is_regulated", "reg_pressure_psi"],
+  projectile: ["name", "type", "brand_id", "caliber_id", "weight_grains", "head_diameter_mm"],
+  moderator: ["name", "brand_id"],
+  caliber: ["name", "nominal_inches", "nominal_mm"],
+};
+
+// Update an existing catalog record's editable fields. `patchIn` is keyed by DB
+// column name; only whitelisted columns for the kind are applied. For brands the
+// slug is regenerated from the name to stay in step (same as rename).
+export async function updateCatalogRecord(kind, id, patchIn) {
+  const allowed = EDIT_COLUMNS[kind];
+  const table = TABLE_BY_KIND[kind];
+  if (!allowed || !table) return { error: `Editing isn't supported for ${kind}.` };
+
+  const patch = {};
+  for (const col of allowed) {
+    if (Object.prototype.hasOwnProperty.call(patchIn, col)) patch[col] = patchIn[col];
+  }
+
+  if ("name" in patch) {
+    const nm = String(patch.name ?? "").trim();
+    if (!nm) return { error: "Name can't be empty." };
+    patch.name = nm;
+    if (kind === "brand") patch.slug = slugify(nm);
+  }
+
+  if (Object.keys(patch).length === 0) return { error: "Nothing to update." };
+
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from(table).update(patch).eq("id", id);
+  if (error) {
+    // 23505 = unique_violation (caliber name, or brand slug clash).
+    if (error.code === "23505") {
+      return {
+        error:
+          kind === "brand"
+            ? "Another brand already maps to that name (slug clash) — pick a different name."
+            : "Another record already uses that name.",
+      };
+    }
+    // 23503 = foreign_key_violation (e.g. a bad brand/model/caliber reference).
+    if (error.code === "23503") return { error: "That reference doesn't exist." };
     return { error: error.message };
   }
   return {};
