@@ -341,7 +341,7 @@ export default function SubmitPage() {
           energy, spread and air efficiency from this. Submissions are reviewed before they appear.
         </p>
 
-        <form onSubmit={handleSubmit} style={{ marginTop: 34 }}>
+        <form onSubmit={handleSubmit} className="submit-form" style={{ marginTop: 34 }}>
           {/* 1. Video */}
           <Section n="01" title="Source video" hint="Where the shot string was filmed">
             <Field label="YouTube URL" required>
@@ -615,12 +615,10 @@ export default function SubmitPage() {
 function Section({ n, title, hint, children }) {
   return (
     <div
+      className="form-section"
       style={{
         borderTop: "1px solid #181b1f",
         padding: "26px 0",
-        display: "grid",
-        gridTemplateColumns: "150px 1fr",
-        gap: 28,
       }}
     >
       <div>
@@ -661,7 +659,7 @@ function Field({ label, required, hint, children }) {
 }
 
 function Row({ children }) {
-  return <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>{children}</div>;
+  return <div className="form-row">{children}</div>;
 }
 
 function UnitInput({ value, onChange, unit, onUnit, units, placeholder }) {

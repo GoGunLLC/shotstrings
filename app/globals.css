@@ -35,6 +35,18 @@ input::placeholder {
   display: none;
 }
 
+/* Submit form layout: a fixed left rail beside the fields on desktop. */
+.form-section {
+  display: grid;
+  grid-template-columns: 150px 1fr;
+  gap: 28px;
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
 @media (max-width: 760px) {
   .site-nav {
     padding: 16px 20px;
@@ -56,5 +68,21 @@ input::placeholder {
      moves into the hamburger menu instead (see SiteNav "Feedback" item). */
   .feedback-fab {
     display: none !important;
+  }
+  /* Submit form: stack each section's header above its fields, and collapse
+     paired rows, so inputs get the full screen width instead of sharing it
+     with the left rail. */
+  .form-section {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  /* Keep form fields ≥16px so iOS Safari doesn't auto-zoom on focus. */
+  .submit-form input,
+  .submit-form select {
+    font-size: 16px !important;
   }
 }
