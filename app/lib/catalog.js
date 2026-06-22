@@ -65,13 +65,13 @@ export async function getCatalog() {
       supabase.from("brands").select("id, name").eq("status", "approved").order("name"),
       supabase
         .from("airgun_models")
-        .select("id, name, brand_id, power_plant, is_regulated")
+        .select("id, name, brand_id, power_plant")
         .eq("status", "approved")
         .order("name"),
       supabase
         .from("airgun_variants")
         .select(
-          `id, model_id, caliber_id, barrel_length_in, reg_pressure_psi,
+          `id, model_id, caliber_id, barrel_length_in, reg_pressure_psi, is_regulated,
            caliber:calibers ( id, name ),
            tanks:airgun_tanks ( id, role, position, volume_cc, rated_pressure_psi )`
         )
@@ -417,17 +417,17 @@ export function addBrand({ name }) {
   return adminInsert("brands", { name, slug: slugify(name) }, "id, name");
 }
 
-export function addModel({ brandId, name, powerPlant, isRegulated }) {
+export function addModel({ brandId, name, powerPlant }) {
   return adminInsert(
     "airgun_models",
-    { brand_id: brandId, name, power_plant: powerPlant, is_regulated: !!isRegulated },
+    { brand_id: brandId, name, power_plant: powerPlant },
     "id, name"
   );
 }
 
 // Variant insert, plus an optional tank in one go (tanks are admin-only, no
 // status column — inserted separately).
-export async function addVariant({ modelId, caliberId, barrelLengthIn, regPressurePsi, tank }) {
+export async function addVariant({ modelId, caliberId, barrelLengthIn, regPressurePsi, isRegulated, tank }) {
   const res = await adminInsert(
     "airgun_variants",
     {
@@ -435,6 +435,7 @@ export async function addVariant({ modelId, caliberId, barrelLengthIn, regPressu
       caliber_id: caliberId,
       barrel_length_in: barrelLengthIn ?? null,
       reg_pressure_psi: regPressurePsi ?? null,
+      is_regulated: !!isRegulated,
     },
     "id"
   );

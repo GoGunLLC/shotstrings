@@ -581,7 +581,6 @@ function ModelForm({ catalog, onChanged }) {
   const [brandId, setBrandId] = useState("");
   const [name, setName] = useState("");
   const [pp, setPp] = useState("pcp");
-  const [reg, setReg] = useState(false);
   const { busy, msg, run } = useAdder(addModel);
   return (
     <Card title="Model">
@@ -589,7 +588,7 @@ function ModelForm({ catalog, onChanged }) {
         onSubmit={(e) => {
           e.preventDefault();
           if (brandId && name.trim())
-            run({ brandId: Number(brandId), name: name.trim(), powerPlant: pp, isRegulated: reg }, () => { setName(""); setReg(false); }).then(onChanged);
+            run({ brandId: Number(brandId), name: name.trim(), powerPlant: pp }, () => { setName(""); }).then(onChanged);
         }}
       >
         <Grid>
@@ -607,11 +606,6 @@ function ModelForm({ catalog, onChanged }) {
               {["pcp", "spring", "gas_ram", "co2", "multi_pump"].map((x) => <option key={x} value={x}>{x}</option>)}
             </select>
           </L>
-          <L label="Regulated">
-            <label style={{ display: "flex", alignItems: "center", gap: 8, height: 38, color: "#cdd2d8", fontSize: 13 }}>
-              <input type="checkbox" checked={reg} onChange={(e) => setReg(e.target.checked)} /> regulated
-            </label>
-          </L>
         </Grid>
         <div style={{ marginTop: 6 }}><SaveBtn busy={busy} /><Status msg={msg} /></div>
       </form>
@@ -624,6 +618,7 @@ function VariantForm({ catalog, onChanged }) {
   const [modelId, setModelId] = useState("");
   const [caliberId, setCaliberId] = useState("");
   const [barrel, setBarrel] = useState("");
+  const [reg, setReg] = useState(false);
   const [regPsi, setRegPsi] = useState("");
   const [vol, setVol] = useState("");
   const [role, setRole] = useState("reservoir");
@@ -641,10 +636,11 @@ function VariantForm({ catalog, onChanged }) {
                 modelId: Number(modelId),
                 caliberId: Number(caliberId),
                 barrelLengthIn: barrel === "" ? null : Number(barrel),
+                isRegulated: reg,
                 regPressurePsi: regPsi === "" ? null : Number(regPsi),
                 tank: { volumeCc: vol === "" ? null : Number(vol), role, ratedPressurePsi: rated === "" ? null : Number(rated) },
               },
-              () => { setBarrel(""); setRegPsi(""); setVol(""); setRated(""); }
+              () => { setBarrel(""); setReg(false); setRegPsi(""); setVol(""); setRated(""); }
             ).then(onChanged);
         }}
       >
@@ -670,6 +666,11 @@ function VariantForm({ catalog, onChanged }) {
         </Grid>
         <Grid>
           <L label="Barrel length"><UnitField value={barrel} onChange={setBarrel} units={DISTANCE_UNITS} placeholder="optional" /></L>
+          <L label="Regulated">
+            <label style={{ display: "flex", alignItems: "center", gap: 8, height: 38, color: "#cdd2d8", fontSize: 13 }}>
+              <input type="checkbox" checked={reg} onChange={(e) => setReg(e.target.checked)} /> regulated
+            </label>
+          </L>
           <L label="Reg pressure"><UnitField value={regPsi} onChange={setRegPsi} units={PRESSURE_UNITS} placeholder="optional" /></L>
         </Grid>
         <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase", margin: "4px 0 10px" }}>
