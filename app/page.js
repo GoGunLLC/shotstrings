@@ -12,8 +12,9 @@ const MONO = "'Space Mono', ui-monospace, monospace";
 const TEAL = "#2fb8a0";
 
 // Mobile graph: how much of the bottom sheet stays visible when collapsed
-// (the grab handle + the compact legend strip).
-const SHEET_PEEK = 116;
+// (the grab handle + the compact legend strip). Sized so the enlarged,
+// easy-to-thumb grab header and a two-row legend both stay in view.
+const SHEET_PEEK = 134;
 
 const METRICS = [
   { key: "vel", label: "VELOCITY" },
@@ -629,27 +630,34 @@ export default function Home() {
               onPointerMove={onSheetMove}
               onPointerUp={onSheetUp}
               style={{
-                padding: "10px 0 8px",
+                padding: "18px 0 12px",
                 display: "flex",
                 justifyContent: "center",
+                alignItems: "center",
                 cursor: "grab",
                 touchAction: "none",
                 flex: "0 0 auto",
               }}
             >
-              <span style={{ width: 42, height: 4, borderRadius: 3, background: "#3a4047" }} />
+              <span style={{ width: 52, height: 5, borderRadius: 3, background: "#46505a" }} />
             </div>
 
-            {/* legend strip (always visible — the peek) */}
+            {/* legend strip (always visible — the peek). Draggable too, so the
+                whole header is one big grab target. */}
             <div
+              onPointerDown={onSheetDown}
+              onPointerMove={onSheetMove}
+              onPointerUp={onSheetUp}
               style={{
                 borderTop: "1px solid #181b1f",
                 borderBottom: "1px solid #181b1f",
-                padding: "10px 12px",
+                padding: "12px 12px",
                 flex: "0 0 auto",
                 display: "grid",
                 gridTemplateColumns: "1fr 1fr",
                 gap: "8px 12px",
+                cursor: "grab",
+                touchAction: "none",
               }}
             >
               {selGuns.map((g) => (
