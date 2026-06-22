@@ -69,7 +69,6 @@ function chartOptions(yTitle) {
 }
 
 export default function Home() {
-  const [mode, setMode] = useState("recent"); // "recent" | "browse"
   const [selected, setSelected] = useState([]); // ids queued for comparison
   const [showCompare, setShowCompare] = useState(false);
   const [metric, setMetric] = useState("vel");
@@ -176,7 +175,6 @@ export default function Home() {
     p.set("view", "graph");
     if (selected.length) p.set("ids", selected.join(","));
     p.set("metric", metric);
-    p.set("mode", mode);
     for (const k of ["cal", "tank", "supp", "reg", "brand", "model"]) {
       if (filters[k]) p.set(k, filters[k]);
     }
@@ -197,8 +195,6 @@ export default function Home() {
     setSelected(ids);
     const m = params.get("metric");
     if (m === "vel" || m === "fpe" || m === "dev") setMetric(m);
-    const md = params.get("mode");
-    if (md === "recent" || md === "browse") setMode(md);
     setFilters({
       cal: params.get("cal") || "",
       tank: params.get("tank") || "",
@@ -260,7 +256,7 @@ export default function Home() {
     if (!showCompare) return;
     window.history.replaceState(window.history.state, "", "?" + buildGraphQuery());
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showCompare, selected, filters, metric, mode]);
+  }, [showCompare, selected, filters, metric]);
 
   // If everything is removed while viewing the chart, drop back to browsing.
   useEffect(() => {
@@ -281,21 +277,30 @@ export default function Home() {
     };
   }, [guns, filters.brand]);
 
+  // Filtered list, always ordered newest submission first. With no filters
+  // active this is simply the most-recently-submitted strings; applying a
+  // filter narrows the set while keeping the same recency order.
   const browseResults = useMemo(() => {
-    return guns.filter((g) => {
-      if (filters.cal && g.cal !== filters.cal) return false;
-      if (filters.brand && g.brand !== filters.brand) return false;
-      if (filters.model && g.model !== filters.model) return false;
-      if (filters.reg === "reg" && !g.regulated) return false;
-      if (filters.reg === "unreg" && g.regulated) return false;
-      if (filters.tank && String(g.tankCc) !== filters.tank) return false;
-      if (filters.supp) {
-        if (filters.supp === "__none") {
-          if (g.suppressor) return false;
-        } else if (g.suppressor !== filters.supp) return false;
-      }
-      return true;
-    });
+    return guns
+      .filter((g) => {
+        if (filters.cal && g.cal !== filters.cal) return false;
+        if (filters.brand && g.brand !== filters.brand) return false;
+        if (filters.model && g.model !== filters.model) return false;
+        if (filters.reg === "reg" && !g.regulated) return false;
+        if (filters.reg === "unreg" && g.regulated) return false;
+        if (filters.tank && String(g.tankCc) !== filters.tank) return false;
+        if (filters.supp) {
+          if (filters.supp === "__none") {
+            if (g.suppressor) return false;
+          } else if (g.suppressor !== filters.supp) return false;
+        }
+        return true;
+      })
+      .sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tb - ta;
+      });
   }, [guns, filters]);
 
   // Chart.js lifecycle — only while the comparison view is open.
@@ -421,18 +426,9 @@ export default function Home() {
                 placeholder={isMobile ? "Search here" : "Search an airgun — FX Impact, Red Wolf…"}
               />
             </div>
-
-            {/* mode selector */}
-            <div style={{ marginTop: 18, display: "flex", justifyContent: "center" }}>
-              <ModeToggle mode={mode} setMode={setMode} />
-            </div>
           </div>
 
-          {mode === "recent" && guns.length > 0 && (
-            <Feed guns={guns} selected={selected} onToggle={toggle} />
-          )}
-
-          {mode === "browse" && (
+          {guns.length > 0 && (
             <Browse
               results={browseResults}
               total={guns.length}
@@ -685,26 +681,20 @@ export default function Home() {
               />
             </div>
 
-            <div style={{ display: "flex", justifyContent: "center", margin: "14px 0 4px" }}>
-              <ModeToggle mode={mode} setMode={setMode} />
+            <div style={{ margin: "14px 0 0" }}>
+              {guns.length > 0 && (
+                <Browse
+                  results={browseResults}
+                  total={guns.length}
+                  options={options}
+                  filters={filters}
+                  setFilters={setFilters}
+                  selected={selected}
+                  onToggle={toggle}
+                  rail
+                />
+              )}
             </div>
-
-            {mode === "recent" && guns.length > 0 && (
-              <Feed guns={guns} selected={selected} onToggle={toggle} rail />
-            )}
-
-            {mode === "browse" && (
-              <Browse
-                results={browseResults}
-                total={guns.length}
-                options={options}
-                filters={filters}
-                setFilters={setFilters}
-                selected={selected}
-                onToggle={toggle}
-                rail
-              />
-            )}
           </div>
         </div>
       )}
@@ -827,49 +817,6 @@ function SearchBox({ query, setQuery, matches, onPick, placeholder }) {
   );
 }
 
-// Recently-submitted / Browse switch.
-function ModeToggle({ mode, setMode }) {
-  const opts = [
-    ["recent", "Recently Submitted"],
-    ["browse", "Browse & Filter"],
-  ];
-  return (
-    <div
-      className="mono"
-      style={{
-        display: "flex",
-        border: "1px solid #23272d",
-        borderRadius: 4,
-        overflow: "hidden",
-      }}
-    >
-      {opts.map(([k, label]) => {
-        const on = mode === k;
-        return (
-          <button
-            key={k}
-            onClick={() => setMode(k)}
-            style={{
-              padding: "9px 16px",
-              background: on ? TEAL : "transparent",
-              color: on ? "#06100e" : "#7b8089",
-              fontWeight: on ? 700 : 400,
-              border: "none",
-              cursor: "pointer",
-              fontSize: 12,
-              letterSpacing: 1,
-              textTransform: "uppercase",
-              fontFamily: "inherit",
-            }}
-          >
-            {label}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
 function FilterSelect({ label, value, onChange, children }) {
   return (
     <div>
@@ -893,9 +840,16 @@ function FilterSelect({ label, value, onChange, children }) {
   );
 }
 
+// Default recency-feed size when no filters are active. Applying any filter
+// reveals the full matching set.
+const RECENT_LIMIT = 12;
+
 function Browse({ results, total, options, filters, setFilters, selected, onToggle, rail }) {
   const set = (key) => (val) => setFilters((f) => ({ ...f, [key]: val }));
   const anyFilter = Object.values(filters).some((v) => v);
+  // With no filters we show a recent feed (capped); filtering shows every match.
+  const shown = anyFilter ? results : results.slice(0, RECENT_LIMIT);
+  const capped = !anyFilter && results.length > shown.length;
 
   return (
     <div
@@ -988,8 +942,15 @@ function Browse({ results, total, options, filters, setFilters, selected, onTogg
             gap: 10,
           }}
         >
-          <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5e7170" }}>
-            {results.length} OF {total} SHOT STRING{total === 1 ? "" : "S"}
+          <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5e7170", display: "flex", alignItems: "center", gap: 9 }}>
+            {anyFilter ? (
+              `${results.length} OF ${total} SHOT STRING${total === 1 ? "" : "S"}`
+            ) : (
+              <>
+                <span style={{ width: 7, height: 7, background: TEAL, display: "inline-block" }} />
+                {capped ? `RECENTLY SUBMITTED · LATEST ${shown.length} OF ${total}` : "RECENTLY SUBMITTED"}
+              </>
+            )}
           </div>
           {anyFilter && (
             <button
@@ -1015,7 +976,7 @@ function Browse({ results, total, options, filters, setFilters, selected, onTogg
       </div>
 
       {/* results */}
-      {results.length > 0 ? (
+      {shown.length > 0 ? (
         <div
           style={{
             display: "grid",
@@ -1023,7 +984,7 @@ function Browse({ results, total, options, filters, setFilters, selected, onTogg
             gap: 14,
           }}
         >
-          {results.map((g) => (
+          {shown.map((g) => (
             <FeedCard key={g.id} g={g} selected={selected.includes(g.id)} onToggle={onToggle} />
           ))}
         </div>
@@ -1038,7 +999,17 @@ function Browse({ results, total, options, filters, setFilters, selected, onTogg
             fontSize: 13,
           }}
         >
-          No shot strings match these filters.
+          <div style={{ marginBottom: 6 }}>No shot strings match these filters.</div>
+          <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+            Got one that fits?{" "}
+            <a
+              href="/submit"
+              style={{ color: TEAL, fontWeight: 700, textDecoration: "none" }}
+            >
+              Submit your own shot string
+            </a>{" "}
+            and be the first on record.
+          </div>
         </div>
       )}
     </div>
@@ -1281,63 +1252,6 @@ function FeedCard({ g, selected, onToggle }) {
             </a>
           )}
         </div>
-      </div>
-    </div>
-  );
-}
-
-function Feed({ guns, selected, onToggle, rail }) {
-  // Newest first; the base list is ordered oldest→newest.
-  const recent = useMemo(() => {
-    const copy = [...guns];
-    copy.sort((a, b) => {
-      const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-      return tb - ta;
-    });
-    return copy.slice(0, 12);
-  }, [guns]);
-
-  return (
-    <div
-      style={{
-        marginTop: rail ? 16 : 46,
-        maxWidth: rail ? "none" : 1100,
-        marginLeft: rail ? 0 : "auto",
-        marginRight: rail ? 0 : "auto",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 16,
-        }}
-      >
-        <div
-          className="mono"
-          style={{ fontSize: 12, letterSpacing: 2, color: "#5e7170", display: "flex", alignItems: "center", gap: 9 }}
-        >
-          <span style={{ width: 7, height: 7, background: TEAL, display: "inline-block" }} />
-          RECENTLY SUBMITTED
-        </div>
-        {!rail && (
-          <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#3f474a" }}>
-            TICK CARDS, THEN DISPLAY GRAPH
-          </div>
-        )}
-      </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: rail ? "1fr" : "repeat(auto-fill, minmax(270px, 1fr))",
-          gap: 14,
-        }}
-      >
-        {recent.map((g) => (
-          <FeedCard key={g.id} g={g} selected={selected.includes(g.id)} onToggle={onToggle} />
-        ))}
       </div>
     </div>
   );
