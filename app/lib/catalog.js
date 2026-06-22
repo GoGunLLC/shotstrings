@@ -7,6 +7,13 @@ import { getSupabaseClient } from "./supabase";
 export const toC = (f) => ((Number(f) - 32) * 5) / 9; // °F -> °C
 export const toFt = (m) => Number(m) * 3.28084; //  m  -> ft
 export const psiFromBar = (bar) => Number(bar) * 14.5038; // bar -> psi
+export const inFromCm = (cm) => Number(cm) / 2.54; //  cm -> in (1 in = 2.54 cm)
+// Inverse directions — used to display a canonical stored value in the unit the
+// user has toggled to (admin edit forms hold the canonical value in state).
+export const barFromPsi = (psi) => Number(psi) / 14.5038; // psi -> bar
+export const cmFromIn = (inches) => Number(inches) * 2.54; //  in -> cm
+export const fFromC = (c) => (Number(c) * 9) / 5 + 32; // °C -> °F
+export const mFromFt = (ft) => Number(ft) / 3.28084; //  ft -> m
 
 // ---------------------------------------------------------------------------
 // YouTube URL parsing — pull the 11-char video id out of any common URL shape.

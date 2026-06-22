@@ -17,10 +17,39 @@ import {
   addVariant,
   addModerator,
   addProjectile,
+  psiFromBar,
+  barFromPsi,
+  inFromCm,
+  cmFromIn,
+  toC,
+  fFromC,
+  toFt,
+  mFromFt,
 } from "../lib/catalog";
 
 const TEAL = "#2fb8a0";
 const AMBER = "#e0a93f";
+
+// Toggle option sets for UnitField. First entry is the canonical storage unit
+// (identity conversion); `to` maps entered value -> canonical, `from` maps the
+// canonical stored value -> the displayed unit.
+const PRESSURE_UNITS = [
+  { key: "psi", to: (n) => Number(n), from: (n) => Number(n) },
+  { key: "bar", to: (n) => psiFromBar(n), from: (n) => barFromPsi(n) },
+];
+const DISTANCE_UNITS = [
+  { key: "in", to: (n) => Number(n), from: (n) => Number(n) },
+  { key: "cm", to: (n) => inFromCm(n), from: (n) => cmFromIn(n) },
+];
+const TEMP_UNITS = [
+  { key: "C", to: (n) => Number(n), from: (n) => Number(n) },
+  { key: "F", to: (n) => toC(n), from: (n) => fFromC(n) },
+];
+const ALTITUDE_UNITS = [
+  { key: "ft", to: (n) => Number(n), from: (n) => Number(n) },
+  { key: "m", to: (n) => toFt(n), from: (n) => mFromFt(n) },
+];
+const roundN = (n) => Math.round(n * 100) / 100;
 
 const field = {
   background: "#0e1013",
@@ -437,9 +466,9 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
         )}
       </Grid>
       <Grid>
-        <L label="Temp (°C)"><input type="number" value={temp} onChange={(e) => setTemp(e.target.value)} style={field} /></L>
-        <L label="Altitude (ft)"><input type="number" value={alt} onChange={(e) => setAlt(e.target.value)} style={field} /></L>
-        <L label="Chrono dist (in)"><input type="number" value={chrono} onChange={(e) => setChrono(e.target.value)} style={field} /></L>
+        <L label="Temp"><UnitField value={temp} onChange={setTemp} units={TEMP_UNITS} /></L>
+        <L label="Altitude"><UnitField value={alt} onChange={setAlt} units={ALTITUDE_UNITS} /></L>
+        <L label="Chrono dist"><UnitField value={chrono} onChange={setChrono} units={DISTANCE_UNITS} /></L>
       </Grid>
       <Grid>
         <L label="Regulated">
@@ -448,7 +477,7 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
             ran regulated
           </label>
         </L>
-        {reg && <L label="Reg setpoint (psi)"><input type="number" value={setpoint} onChange={(e) => setSetpoint(e.target.value)} style={field} /></L>}
+        {reg && <L label="Reg setpoint"><UnitField value={setpoint} onChange={setSetpoint} units={PRESSURE_UNITS} /></L>}
       </Grid>
 
       <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "8px 0 8px" }}>
@@ -640,8 +669,8 @@ function VariantForm({ catalog, onChanged }) {
           </L>
         </Grid>
         <Grid>
-          <L label="Barrel length (in)"><input type="number" value={barrel} onChange={(e) => setBarrel(e.target.value)} placeholder="optional" style={field} /></L>
-          <L label="Reg pressure (psi)"><input type="number" value={regPsi} onChange={(e) => setRegPsi(e.target.value)} placeholder="optional" style={field} /></L>
+          <L label="Barrel length"><UnitField value={barrel} onChange={setBarrel} units={DISTANCE_UNITS} placeholder="optional" /></L>
+          <L label="Reg pressure"><UnitField value={regPsi} onChange={setRegPsi} units={PRESSURE_UNITS} placeholder="optional" /></L>
         </Grid>
         <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase", margin: "4px 0 10px" }}>
           Tank (volume needed for air-efficiency math)
@@ -653,7 +682,7 @@ function VariantForm({ catalog, onChanged }) {
               {["reservoir", "main", "working"].map((x) => <option key={x} value={x}>{x}</option>)}
             </select>
           </L>
-          <L label="Rated pressure (psi)"><input type="number" value={rated} onChange={(e) => setRated(e.target.value)} placeholder="optional" style={field} /></L>
+          <L label="Rated pressure"><UnitField value={rated} onChange={setRated} units={PRESSURE_UNITS} placeholder="optional" /></L>
         </Grid>
         <div style={{ marginTop: 6 }}><SaveBtn busy={busy} label="Add variant" /><Status msg={msg} /></div>
       </form>
@@ -742,6 +771,71 @@ function ProjectileForm({ catalog, onChanged }) {
 function Grid({ children }) {
   return <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12, marginBottom: 12 }}>{children}</div>;
 }
+// Numeric input with a unit toggle. `value`/`onChange` always speak the
+// canonical storage unit (psi, in); the toggle only affects what the user types
+// and sees. A local draft string keeps decimal entry from being mangled by the
+// round-trip through the canonical value.
+function UnitField({ value, onChange, units, placeholder }) {
+  const [unit, setUnit] = useState(units[0].key);
+  const [draft, setDraft] = useState(undefined);
+  // Drop the typing buffer when the value is cleared from outside (e.g. the form
+  // resets after a successful save) so the field doesn't keep showing stale text.
+  useEffect(() => {
+    if (value === "" || value == null) setDraft(undefined);
+  }, [value]);
+  const opt = units.find((u) => u.key === unit) || units[0];
+  const shown =
+    draft !== undefined
+      ? draft
+      : value === "" || value == null
+      ? ""
+      : String(roundN(opt.from(value)));
+
+  function onType(text) {
+    setDraft(text);
+    onChange(text === "" ? "" : roundN(opt.to(Number(text))));
+  }
+  function switchUnit(k) {
+    setDraft(undefined); // re-derive the shown value in the new unit
+    setUnit(k);
+  }
+
+  return (
+    <div style={{ display: "flex", gap: 6 }}>
+      <input
+        type="number"
+        inputMode="decimal"
+        value={shown}
+        onChange={(e) => onType(e.target.value)}
+        placeholder={placeholder}
+        style={{ ...field, flex: 1 }}
+      />
+      <div style={{ display: "flex", border: "1px solid #23272d", borderRadius: 4, overflow: "hidden" }}>
+        {units.map((u) => (
+          <button
+            key={u.key}
+            type="button"
+            onClick={() => switchUnit(u.key)}
+            className="mono"
+            style={{
+              background: unit === u.key ? TEAL : "transparent",
+              color: unit === u.key ? "#06100e" : "#7b8089",
+              border: "none",
+              padding: "0 10px",
+              fontSize: 11,
+              fontWeight: 700,
+              cursor: "pointer",
+              textTransform: "uppercase",
+            }}
+          >
+            {u.key}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function L({ label, children }) {
   return (
     <div>

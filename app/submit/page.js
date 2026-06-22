@@ -12,6 +12,7 @@ import {
   toC,
   toFt,
   psiFromBar,
+  inFromCm,
 } from "../lib/catalog";
 
 const TEAL = "#2fb8a0";
@@ -47,6 +48,8 @@ export default function SubmitPage() {
   const [altitude, setAltitude] = useState("");
   const [altUnit, setAltUnit] = useState("ft");
   const [chronoDist, setChronoDist] = useState("");
+  const [chronoDistUnit, setChronoDistUnit] = useState("in");
+  const [regUnit, setRegUnit] = useState("psi");
   const [pressUnit, setPressUnit] = useState("psi");
   const [tankPress, setTankPress] = useState({}); // { [tankId]: {start, end} }
   const [shots, setShots] = useState([]);
@@ -280,7 +283,7 @@ export default function SubmitPage() {
       (s) => s.status === "measured" && (s.velocity == null || !Number.isFinite(s.velocity))
     );
     if (badMeasured)
-      return setError("Every 'measured' shot needs a velocity (or mark it misread/missing).");
+      return setError("Every 'measured' shot needs a velocity (or mark it 'no read').");
 
     // Convert entry units -> canonical storage units.
     const temperatureC =
@@ -304,10 +307,16 @@ export default function SubmitPage() {
       projectileId: projChoice === "custom" ? null : selectedProj ? Number(selectedProj.id) : null,
       moderatorId: moderatorId ? Number(moderatorId) : null,
       ranRegulated,
-      regSetpointPsi: ranRegulated && regSetpoint !== "" ? Number(regSetpoint) : null,
+      regSetpointPsi:
+        ranRegulated && regSetpoint !== ""
+          ? regUnit === "bar"
+            ? psiFromBar(regSetpoint)
+            : Number(regSetpoint)
+          : null,
       temperatureC,
       altitudeFt,
-      chronoDistanceIn: chronoDist === "" ? null : Number(chronoDist),
+      chronoDistanceIn:
+        chronoDist === "" ? null : chronoDistUnit === "cm" ? inFromCm(chronoDist) : Number(chronoDist),
       tankPressures,
       shots,
     });
@@ -470,15 +479,14 @@ export default function SubmitPage() {
               </Field>
             </Row>
             <Row>
-              <Field label="Chrono distance from muzzle (in)" hint="How far the chrono sat">
-                <input
-                  type="number"
-                  inputMode="decimal"
+              <Field label="Chrono distance from muzzle" hint="How far the chrono sat">
+                <UnitInput
                   value={chronoDist}
-                  onChange={(e) => setChronoDist(e.target.value)}
+                  onChange={setChronoDist}
+                  unit={chronoDistUnit}
+                  onUnit={setChronoDistUnit}
+                  units={["in", "cm"]}
                   placeholder="e.g. 12"
-                  className="mono"
-                  style={fieldStyle}
                 />
               </Field>
               <Field label="Regulated?">
@@ -491,15 +499,14 @@ export default function SubmitPage() {
               </Field>
             </Row>
             {ranRegulated && (
-              <Field label="Regulator setpoint (psi)" hint="Governs consistency — not the energy calc">
-                <input
-                  type="number"
-                  inputMode="decimal"
+              <Field label="Regulator setpoint" hint="Governs consistency — not the energy calc">
+                <UnitInput
                   value={regSetpoint}
-                  onChange={(e) => setRegSetpoint(e.target.value)}
+                  onChange={setRegSetpoint}
+                  unit={regUnit}
+                  onUnit={setRegUnit}
+                  units={["psi", "bar"]}
                   placeholder="e.g. 1700"
-                  className="mono"
-                  style={fieldStyle}
                 />
               </Field>
             )}
@@ -568,7 +575,7 @@ export default function SubmitPage() {
 
           {/* 6. Shots */}
           <Section n="06" title="The shots" hint="Velocities in order — keep unread shots in place">
-            <ShotsEditor shots={shots} onChange={setShots} />
+            <ShotsEditor shots={shots} onChange={setShots} simpleStatus />
           </Section>
 
           {error && (
