@@ -607,8 +607,21 @@ export default function Home() {
             </div>
           </div>
 
-          {/* chart — fills the space above the collapsed sheet */}
-          <div style={{ flex: "1 1 auto", minHeight: 0, position: "relative", padding: "6px 10px 0", marginBottom: SHEET_PEEK }}>
+          {/* chart — fills the space above the collapsed sheet. While the sheet
+              is expanded it sits fully behind it, so disable its pointer events:
+              otherwise iOS can route touch-scrolls on the sheet through to the
+              canvas's Chart.js listeners (the scroll body is its own momentum
+              layer), making it feel like you're grabbing the graph behind. */}
+          <div
+            style={{
+              flex: "1 1 auto",
+              minHeight: 0,
+              position: "relative",
+              padding: "6px 10px 0",
+              marginBottom: SHEET_PEEK,
+              pointerEvents: sheetOpen ? "none" : "auto",
+            }}
+          >
             <canvas ref={canvasRef} />
           </div>
 
@@ -688,8 +701,10 @@ export default function Home() {
               ))}
             </div>
 
-            {/* scrollable body — full stats, search, filters, list */}
-            <div style={{ overflowY: "auto", padding: "14px 14px 60px", flex: "1 1 auto", WebkitOverflowScrolling: "touch" }}>
+            {/* scrollable body — full stats, search, filters, list. Contain the
+                overscroll so a flick that hits the top/bottom of this list stays
+                here instead of chaining to the graph/page behind the sheet. */}
+            <div style={{ overflowY: "auto", overscrollBehavior: "contain", padding: "14px 14px 60px", flex: "1 1 auto", WebkitOverflowScrolling: "touch" }}>
               <div className="mono" style={{ fontSize: 9, letterSpacing: 2, color: "#5e7170", marginBottom: 10 }}>
                 SELECTED · FULL STATS
               </div>
