@@ -66,20 +66,23 @@ export default function AboutPage() {
     <div style={{ minHeight: "100vh" }}>
       <SiteNav active="about" />
 
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "64px 40px 90px" }}>
+      <div
+        className="about-wrap"
+        style={{ maxWidth: 760, margin: "0 auto", padding: "64px 40px 90px" }}
+      >
         {/* hero */}
         <div style={{ marginBottom: 8 }}>
           <SectionLabel>Measured, not claimed</SectionLabel>
           <h1
+            className="about-hero-title"
             style={{
-              fontSize: 52,
               lineHeight: 1.02,
               fontWeight: 800,
               letterSpacing: "-1.8px",
               margin: "0 0 20px",
             }}
           >
-            What <span style={{ color: TEAL }}>ShotStrings.com</span> is
+            What <span style={{ color: TEAL }}>ShotStrings</span> is
           </h1>
           <p style={{ color: "#aeb4bc", fontSize: 20, lineHeight: 1.6 }}>
             ShotStrings.com is the most complete, explorable database of real airgun

@@ -35,6 +35,12 @@ input::placeholder {
   display: none;
 }
 
+/* About page hero: scale the headline with the viewport so the long
+   "ShotStrings" word can't overflow and push the page off-screen on mobile. */
+.about-hero-title {
+  font-size: clamp(32px, 9vw, 52px);
+}
+
 /* Submit form layout: a fixed left rail beside the fields on desktop. */
 .form-section {
   display: grid;
@@ -84,5 +90,9 @@ input::placeholder {
   .submit-form input,
   .submit-form select {
     font-size: 16px !important;
+  }
+  /* Trim the heavy side padding so the content column uses the full width. */
+  .about-wrap {
+    padding: 44px 22px 70px !important;
   }
 }
