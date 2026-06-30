@@ -1,7 +1,10 @@
 import "./globals.css";
 import { Archivo, Space_Mono } from "next/font/google";
+import { GoogleTagManager } from "@next/third-parties/google";
 import FeedbackWidget from "./components/FeedbackWidget";
 import SiteFooter from "./components/SiteFooter";
+
+const GTM_ID = "GTM-PHH9J2HR";
 
 const archivo = Archivo({
   subsets: ["latin"],
@@ -53,6 +56,7 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" className={`${archivo.variable} ${spaceMono.variable}`}>
+      <GoogleTagManager gtmId={GTM_ID} />
       <body>
         {children}
         <SiteFooter />
