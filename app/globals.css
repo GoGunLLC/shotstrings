@@ -22,6 +22,29 @@ input::placeholder {
 
 .airgun-search {
   font-size: 13px;
+  /* Native caret is hidden; a custom teal caret (.spotlight-caret) is drawn on
+     top so its blink can fade smoothly on a single, consistent timer. */
+  caret-color: transparent;
+}
+
+/* Steady, smooth fade — held on, eased off, held off, eased back, like the
+   macOS Spotlight caret. One timer, so the rhythm never drifts. */
+.spotlight-caret {
+  animation: spotlight-caret 1.1s ease-in-out infinite;
+}
+
+@keyframes spotlight-caret {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  50%,
+  90% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 ::selection {

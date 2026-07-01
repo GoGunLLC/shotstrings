@@ -12,6 +12,16 @@ const MONO = "'Space Mono', ui-monospace, monospace";
 const TEAL = "#2fb8a0";
 const AMBER = "#d6a23e";
 
+// Measures the pixel width of `text` in the search input's font, so the custom
+// teal caret can be positioned exactly where the native one would sit.
+let _measureCtx = null;
+function measureText(text, fontSizePx) {
+  if (typeof document === "undefined") return 0;
+  if (!_measureCtx) _measureCtx = document.createElement("canvas").getContext("2d");
+  _measureCtx.font = `${fontSizePx}px ${MONO}`;
+  return _measureCtx.measureText(text).width;
+}
+
 // A proof link is only shown when it points at a real YouTube video. Seed/test
 // rows use placeholder ids (e.g. "DUMMY_huben", "SEEDvideo001"); a genuine
 // YouTube id is exactly 11 chars of [A-Za-z0-9_-]. Anything else is treated as
@@ -1076,6 +1086,49 @@ export default function Home() {
 // Airgun search with a type-ahead dropdown. Picking a result adds it to the
 // comparison selection. Reused on the home hero and inside the graph rail.
 function SearchBox({ query, setQuery, matches, onPick, placeholder }) {
+  const inputRef = useRef(null);
+  const caretRef = useRef(null);
+  const [focused, setFocused] = useState(false);
+  const [caret, setCaret] = useState({ left: 0, top: 0, height: 0 });
+
+  // Position the custom caret where the text cursor is.
+  const updateCaret = useCallback(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    const fontSize = parseFloat(window.getComputedStyle(input).fontSize) || 13;
+    const pos = input.selectionStart ?? input.value.length;
+    const w = measureText(input.value.slice(0, pos), fontSize);
+    const height = Math.round(fontSize * 1.15);
+    setCaret({
+      left: input.offsetLeft + w - input.scrollLeft,
+      top: input.offsetTop + (input.offsetHeight - height) / 2,
+      height,
+    });
+  }, []);
+
+  // Restart the blink so the caret is solid the instant you type or move it,
+  // then eases back into its steady fade — same feel as the macOS caret.
+  const restartBlink = useCallback(() => {
+    const el = caretRef.current;
+    if (!el) return;
+    el.style.animation = "none";
+    void el.offsetWidth;
+    el.style.animation = "";
+  }, []);
+
+  useEffect(() => {
+    if (!focused) return;
+    updateCaret();
+    restartBlink();
+  }, [query, focused, updateCaret, restartBlink]);
+
+  useEffect(() => {
+    if (!focused) return;
+    const onResize = () => updateCaret();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, [focused, updateCaret]);
+
   return (
     <div style={{ position: "relative", width: "100%", textAlign: "left" }}>
       <div
@@ -1098,11 +1151,16 @@ function SearchBox({ query, setQuery, matches, onPick, placeholder }) {
           </svg>
         </div>
         <input
+          ref={inputRef}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && matches.length) onPick(matches[0].id);
           }}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          onSelect={updateCaret}
+          onClick={updateCaret}
           placeholder={placeholder}
           autoComplete="off"
           className="mono airgun-search"
@@ -1117,6 +1175,23 @@ function SearchBox({ query, setQuery, matches, onPick, placeholder }) {
           }}
         />
       </div>
+      {focused && (
+        <span
+          ref={caretRef}
+          className="spotlight-caret"
+          aria-hidden="true"
+          style={{
+            position: "absolute",
+            left: caret.left,
+            top: caret.top,
+            height: caret.height,
+            width: 1.5,
+            background: TEAL,
+            borderRadius: 1,
+            pointerEvents: "none",
+          }}
+        />
+      )}
 
       {matches.length > 0 && (
         <div
