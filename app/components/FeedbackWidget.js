@@ -136,7 +136,7 @@ export default function FeedbackWidget() {
           border: "none",
           borderRadius: 999,
           padding: "12px 18px",
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 800,
           letterSpacing: 1,
           textTransform: "uppercase",
@@ -202,7 +202,7 @@ export default function FeedbackWidget() {
                 />
                 <span
                   className="mono"
-                  style={{ fontSize: 12, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", color: "#e6e7e9" }}
+                  style={{ fontSize: 13, fontWeight: 800, letterSpacing: 2, textTransform: "uppercase", color: "#e6e7e9" }}
                 >
                   {done ? "Thank you" : "Tell us what to build"}
                 </span>
@@ -240,7 +240,7 @@ export default function FeedbackWidget() {
                       border: "none",
                       borderRadius: 6,
                       padding: "10px 16px",
-                      fontSize: 13,
+                      fontSize: 14,
                       fontWeight: 700,
                       cursor: "pointer",
                       fontFamily: "inherit",
@@ -258,7 +258,7 @@ export default function FeedbackWidget() {
                   </p>
 
                   {session === undefined ? (
-                    <div style={{ color: "#5e7170", fontSize: 13 }} className="mono">
+                    <div style={{ color: "#5e7170", fontSize: 14 }} className="mono">
                       Loading…
                     </div>
                   ) : !session ? (
@@ -270,7 +270,7 @@ export default function FeedbackWidget() {
                         padding: "16px",
                       }}
                     >
-                      <div style={{ color: "#cdd2d8", fontSize: 13.5, lineHeight: 1.5, marginBottom: 14 }}>
+                      <div style={{ color: "#cdd2d8", fontSize: 14.5, lineHeight: 1.5, marginBottom: 14 }}>
                         Sign in with your Google account to send a suggestion. It takes a second and
                         lets us follow up if we have questions.
                       </div>
@@ -286,7 +286,7 @@ export default function FeedbackWidget() {
                             border: "1px solid #8e918f",
                             borderRadius: 4,
                             padding: "9px 15px",
-                            fontSize: 13,
+                            fontSize: 14,
                             fontWeight: 700,
                             cursor: "pointer",
                             fontFamily: "inherit",
@@ -323,14 +323,14 @@ export default function FeedbackWidget() {
                       />
                       <div
                         className="mono"
-                        style={{ fontSize: 11, color: "#5e7170", marginTop: 8, display: "flex", justifyContent: "space-between" }}
+                        style={{ fontSize: 12, color: "#5e7170", marginTop: 8, display: "flex", justifyContent: "space-between" }}
                       >
                         <span>Sending as {session.user.email}</span>
                         <span>{message.length}/5000</span>
                       </div>
 
                       {error && (
-                        <div style={{ color: "#e0734f", fontSize: 12.5, marginTop: 10 }}>{error}</div>
+                        <div style={{ color: "#e0734f", fontSize: 13.5, marginTop: 10 }}>{error}</div>
                       )}
 
                       <button
@@ -344,7 +344,7 @@ export default function FeedbackWidget() {
                           border: "none",
                           borderRadius: 6,
                           padding: "11px 16px",
-                          fontSize: 13.5,
+                          fontSize: 14.5,
                           fontWeight: 800,
                           letterSpacing: 0.5,
                           cursor: busy ? "default" : "pointer",
@@ -357,7 +357,7 @@ export default function FeedbackWidget() {
                   )}
 
                   {error && !session && (
-                    <div style={{ color: "#e0734f", fontSize: 12.5, marginTop: 10 }}>{error}</div>
+                    <div style={{ color: "#e0734f", fontSize: 13.5, marginTop: 10 }}>{error}</div>
                   )}
                 </>
               )}

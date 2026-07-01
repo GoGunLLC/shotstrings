@@ -60,7 +60,7 @@ const field = {
   border: "1px solid #23272d",
   borderRadius: 4,
   color: "#e6e7e9",
-  fontSize: 13,
+  fontSize: 14,
   padding: "9px 11px",
   outline: "none",
   width: "100%",
@@ -93,7 +93,7 @@ export default function AdminPage() {
   if (profile === undefined) {
     return (
       <Shell>
-        <div className="mono" style={{ color: "#5e7170", fontSize: 12 }}>
+        <div className="mono" style={{ color: "#5e7170", fontSize: 13 }}>
           Loading…
         </div>
       </Shell>
@@ -108,7 +108,7 @@ export default function AdminPage() {
           <p style={{ color: "#868d96", fontSize: 14, marginTop: 10 }}>
             This area is restricted. {profile ? "Your account isn't an admin." : "Sign in with an admin account."}
           </p>
-          <Link href="/" style={{ color: TEAL, fontSize: 13, marginTop: 16, display: "inline-block" }}>
+          <Link href="/" style={{ color: TEAL, fontSize: 14, marginTop: 16, display: "inline-block" }}>
             ← Back to the index
           </Link>
         </div>
@@ -120,7 +120,7 @@ export default function AdminPage() {
     <Shell>
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", marginBottom: 24 }}>
         <div>
-          <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: AMBER, marginBottom: 8 }}>
+          <div className="mono" style={{ fontSize: 12, letterSpacing: 2, color: AMBER, marginBottom: 8 }}>
             ADMIN CONSOLE
           </div>
           <h1 style={{ fontSize: 36, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1 }}>Moderation</h1>
@@ -140,7 +140,7 @@ export default function AdminPage() {
                 color: tab === k ? "#100c02" : "#7b8089",
                 border: "none",
                 padding: "9px 16px",
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 700,
                 letterSpacing: 0.5,
                 cursor: "pointer",
@@ -210,7 +210,7 @@ function ReviewQueue({ catalog }) {
               border: "1px solid #23272d",
               borderRadius: 4,
               padding: "7px 13px",
-              fontSize: 11,
+              fontSize: 12,
               letterSpacing: 0.5,
               cursor: "pointer",
               textTransform: "uppercase",
@@ -222,12 +222,12 @@ function ReviewQueue({ catalog }) {
       </div>
 
       {msg && (
-        <div className="mono" style={{ fontSize: 11, color: TEAL, marginBottom: 14 }}>
+        <div className="mono" style={{ fontSize: 12, color: TEAL, marginBottom: 14 }}>
           {msg}
         </div>
       )}
 
-      {rows === null && <div className="mono" style={{ color: "#5e7170", fontSize: 12 }}>Loading…</div>}
+      {rows === null && <div className="mono" style={{ color: "#5e7170", fontSize: 13 }}>Loading…</div>}
       {rows && rows.length === 0 && (
         <div style={{ border: "1px dashed #23272d", borderRadius: 8, padding: 40, textAlign: "center", color: "#868d96", fontSize: 14 }}>
           Nothing here.
@@ -245,9 +245,9 @@ function ReviewQueue({ catalog }) {
                   <div style={{ fontSize: 14, fontWeight: 700 }}>
                     {[r.brand, r.model].filter(Boolean).join(" ") || "Unknown gun"}
                     {r.variantName ? ` · ${r.variantName}` : ""}{" "}
-                    <span className="mono" style={{ color: TEAL, fontSize: 12 }}>{r.caliber}</span>
+                    <span className="mono" style={{ color: TEAL, fontSize: 13 }}>{r.caliber}</span>
                   </div>
-                  <div className="mono" style={{ fontSize: 11, color: "#5e7170", marginTop: 3 }}>
+                  <div className="mono" style={{ fontSize: 12, color: "#5e7170", marginTop: 3 }}>
                     {r.projectile} · {r.weightGrains} gr · {r.shots.length} shots · by {r.submitter}
                     {r.video?.youtube_url ? (
                       <>
@@ -262,7 +262,7 @@ function ReviewQueue({ catalog }) {
                 <span
                   className="mono"
                   style={{
-                    fontSize: 11,
+                    fontSize: 12,
                     letterSpacing: 0.5,
                     textTransform: "uppercase",
                     color: st.color,
@@ -333,7 +333,7 @@ function ActBtn({ color, onClick, children }) {
         border: `1px solid ${color}`,
         borderRadius: 4,
         padding: "6px 13px",
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 700,
         letterSpacing: 0.5,
         cursor: "pointer",
@@ -514,18 +514,18 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
         {reg && <L label="Reg setpoint"><UnitField value={setpoint} onChange={setSetpoint} units={PRESSURE_UNITS} /></L>}
       </Grid>
 
-      <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "8px 0 8px" }}>
+      <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "8px 0 8px" }}>
         Fill pressure
       </div>
       {!variantId ? (
-        <div className="mono" style={{ fontSize: 11, color: "#5e7170", marginBottom: 8 }}>SELECT A VARIANT TO SEE ITS TANK(S)</div>
+        <div className="mono" style={{ fontSize: 12, color: "#5e7170", marginBottom: 8 }}>SELECT A VARIANT TO SEE ITS TANK(S)</div>
       ) : tanks.length === 0 ? (
-        <div className="mono" style={{ fontSize: 11, color: "#5e7170", marginBottom: 8 }}>NO TANK DATA IN CATALOG FOR THIS VARIANT</div>
+        <div className="mono" style={{ fontSize: 12, color: "#5e7170", marginBottom: 8 }}>NO TANK DATA IN CATALOG FOR THIS VARIANT</div>
       ) : (
         tanks.map((t) => (
           <div key={t.id} style={{ marginBottom: 4 }}>
             {tanks.length > 1 && (
-              <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "4px 0 6px" }}>
+              <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "4px 0 6px" }}>
                 {tankRoleShort(t.role)} tank{t.volume_cc ? ` · ${t.volume_cc} cc` : ""}
               </div>
             )}
@@ -541,18 +541,18 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
         ))
       )}
 
-      <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "8px 0 8px" }}>
+      <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "8px 0 8px" }}>
         Shots
       </div>
       <ShotsEditor shots={shots} onChange={setShots} />
 
-      {err && <div style={{ color: "#f0a0a0", fontSize: 12.5, marginTop: 12 }}>{err}</div>}
+      {err && <div style={{ color: "#f0a0a0", fontSize: 13.5, marginTop: 12 }}>{err}</div>}
 
       <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-        <button onClick={save} disabled={busy} style={{ background: TEAL, color: "#06100e", border: "none", borderRadius: 4, padding: "10px 18px", fontSize: 12.5, fontWeight: 800, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
+        <button onClick={save} disabled={busy} style={{ background: TEAL, color: "#06100e", border: "none", borderRadius: 4, padding: "10px 18px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
           {busy ? "Saving…" : "Save changes"}
         </button>
-        <button onClick={onCancel} style={{ background: "transparent", color: "#cdd2d8", border: "1px solid #23272d", borderRadius: 4, padding: "10px 18px", fontSize: 12.5, fontWeight: 700, cursor: "pointer" }}>
+        <button onClick={onCancel} style={{ background: "transparent", color: "#cdd2d8", border: "1px solid #23272d", borderRadius: 4, padding: "10px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer" }}>
           Cancel
         </button>
       </div>
@@ -564,10 +564,10 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
 // CATALOG QUICK-ADD
 // ===========================================================================
 function CatalogAdmin({ catalog, onChanged }) {
-  if (!catalog) return <div className="mono" style={{ color: "#5e7170", fontSize: 12 }}>Loading catalog…</div>;
+  if (!catalog) return <div className="mono" style={{ color: "#5e7170", fontSize: 13 }}>Loading catalog…</div>;
   return (
     <div style={{ display: "grid", gap: 16 }}>
-      <p style={{ color: "#868d96", fontSize: 13, lineHeight: 1.6, margin: 0 }}>
+      <p style={{ color: "#868d96", fontSize: 14, lineHeight: 1.6, margin: 0 }}>
         Entries you add here are saved <strong style={{ color: TEAL }}>approved</strong> and appear in the
         submission form immediately.
       </p>
@@ -640,7 +640,7 @@ function useAdder(fn) {
 function Status({ msg }) {
   if (!msg) return null;
   return (
-    <span className="mono" style={{ fontSize: 11, marginLeft: 12, color: msg.ok ? TEAL : "#f0a0a0" }}>
+    <span className="mono" style={{ fontSize: 12, marginLeft: 12, color: msg.ok ? TEAL : "#f0a0a0" }}>
       {msg.text}
     </span>
   );
@@ -648,7 +648,7 @@ function Status({ msg }) {
 
 function SaveBtn({ busy, label = "Add" }) {
   return (
-    <button type="submit" disabled={busy} style={{ background: TEAL, color: "#06100e", border: "none", borderRadius: 4, padding: "9px 18px", fontSize: 12.5, fontWeight: 800, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
+    <button type="submit" disabled={busy} style={{ background: TEAL, color: "#06100e", border: "none", borderRadius: 4, padding: "9px 18px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", opacity: busy ? 0.6 : 1 }}>
       {busy ? "Saving…" : label}
     </button>
   );
@@ -796,7 +796,7 @@ function VariantForm({ catalog, onChanged }) {
             </div>
           </L>
         </Grid>
-        <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase", margin: "4px 0 10px" }}>
+        <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase", margin: "4px 0 10px" }}>
           Tanks (volume needed for air-efficiency math)
         </div>
         {tanks.map((t, i) => (
@@ -815,7 +815,7 @@ function VariantForm({ catalog, onChanged }) {
               onClick={() => removeTankRow(i)}
               disabled={tanks.length === 1}
               title={tanks.length === 1 ? "At least one tank" : "Remove tank"}
-              style={{ background: "none", border: "1px solid #2a2f36", borderRadius: 4, color: tanks.length === 1 ? "#3a3f46" : "#c98a8a", height: 38, padding: "0 12px", fontSize: 12, cursor: tanks.length === 1 ? "not-allowed" : "pointer", flexShrink: 0 }}
+              style={{ background: "none", border: "1px solid #2a2f36", borderRadius: 4, color: tanks.length === 1 ? "#3a3f46" : "#c98a8a", height: 38, padding: "0 12px", fontSize: 13, cursor: tanks.length === 1 ? "not-allowed" : "pointer", flexShrink: 0 }}
             >
               Remove
             </button>
@@ -825,7 +825,7 @@ function VariantForm({ catalog, onChanged }) {
           type="button"
           onClick={addTankRow}
           className="mono"
-          style={{ background: "none", border: "1px dashed #2a2f36", borderRadius: 4, color: TEAL, padding: "8px 14px", fontSize: 12, cursor: "pointer", marginBottom: 6 }}
+          style={{ background: "none", border: "1px dashed #2a2f36", borderRadius: 4, color: TEAL, padding: "8px 14px", fontSize: 13, cursor: "pointer", marginBottom: 6 }}
         >
           + Add tank
         </button>
@@ -967,7 +967,7 @@ function UnitField({ value, onChange, units, placeholder }) {
               color: unit === u.key ? "#06100e" : "#7b8089",
               border: "none",
               padding: "0 10px",
-              fontSize: 11,
+              fontSize: 12,
               fontWeight: 700,
               cursor: "pointer",
               textTransform: "uppercase",
@@ -984,7 +984,7 @@ function UnitField({ value, onChange, units, placeholder }) {
 function L({ label, children }) {
   return (
     <div>
-      <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
+      <label className="mono" style={{ display: "block", fontSize: 12, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
         {label}
       </label>
       {children}

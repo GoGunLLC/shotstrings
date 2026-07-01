@@ -13,7 +13,7 @@ export function LegalShell({ active, label, title, updated, children }) {
         <div
           className="mono"
           style={{
-            fontSize: 13,
+            fontSize: 14,
             letterSpacing: 2,
             color: "#5e7170",
             textTransform: "uppercase",
@@ -39,7 +39,7 @@ export function LegalShell({ active, label, title, updated, children }) {
           {title}
         </h1>
 
-        <div className="mono" style={{ color: "#5e7170", fontSize: 13, letterSpacing: 0.5 }}>
+        <div className="mono" style={{ color: "#5e7170", fontSize: 14, letterSpacing: 0.5 }}>
           Last updated {updated}
         </div>
 

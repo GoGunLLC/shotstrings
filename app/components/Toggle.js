@@ -49,7 +49,7 @@ export default function Toggle({ on, onClick, onLabel, offLabel, disabled = fals
         />
       </button>
       {hasLabel && (
-        <span style={{ fontSize: 13, color: "#868d96" }}>{on ? onLabel : offLabel}</span>
+        <span style={{ fontSize: 14, color: "#868d96" }}>{on ? onLabel : offLabel}</span>
       )}
     </div>
   );

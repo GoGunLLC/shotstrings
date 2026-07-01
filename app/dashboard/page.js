@@ -33,7 +33,7 @@ export default function DashboardPage() {
     return (
       <div style={{ minHeight: "100vh" }}>
         <SiteNav active="dashboard" />
-        <div className="mono" style={{ padding: 60, color: "#5e7170", fontSize: 12 }}>
+        <div className="mono" style={{ padding: 60, color: "#5e7170", fontSize: 13 }}>
           Loading…
         </div>
       </div>
@@ -56,7 +56,7 @@ export default function DashboardPage() {
             }}
           >
             <h2 style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>Sign in to view your dashboard</h2>
-            <p style={{ color: "#868d96", fontSize: 13.5, lineHeight: 1.6, margin: "10px 0 20px" }}>
+            <p style={{ color: "#868d96", fontSize: 14.5, lineHeight: 1.6, margin: "10px 0 20px" }}>
               Your dashboard shows the videos and shot strings you've submitted, with their review
               status.
             </p>
@@ -78,7 +78,7 @@ export default function DashboardPage() {
                 border: "none",
                 borderRadius: 4,
                 padding: "11px 14px",
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 700,
                 cursor: "pointer",
                 fontFamily: "inherit",
@@ -108,7 +108,7 @@ export default function DashboardPage() {
           }}
         >
           <div>
-            <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: TEAL, marginBottom: 8 }}>
+            <div className="mono" style={{ fontSize: 12, letterSpacing: 2, color: TEAL, marginBottom: 8 }}>
               CREATOR DASHBOARD
             </div>
             <h1 style={{ fontSize: 36, fontWeight: 800, letterSpacing: -1.2, lineHeight: 1 }}>
@@ -128,7 +128,7 @@ export default function DashboardPage() {
         </div>
 
         {!data && (
-          <div className="mono" style={{ color: "#5e7170", fontSize: 12 }}>
+          <div className="mono" style={{ color: "#5e7170", fontSize: 13 }}>
             Loading your submissions…
           </div>
         )}
@@ -191,13 +191,13 @@ export default function DashboardPage() {
                       target="_blank"
                       rel="noreferrer"
                       className="mono"
-                      style={{ fontSize: 11, color: "#5e7170", textDecoration: "none" }}
+                      style={{ fontSize: 12, color: "#5e7170", textDecoration: "none" }}
                     >
                       {v.youtube_url} ↗
                     </a>
                   )}
                 </div>
-                <span className="mono" style={{ fontSize: 11, color: "#5e7170", letterSpacing: 0.5, whiteSpace: "nowrap" }}>
+                <span className="mono" style={{ fontSize: 12, color: "#5e7170", letterSpacing: 0.5, whiteSpace: "nowrap" }}>
                   {v.strings.length} STRING{v.strings.length === 1 ? "" : "S"}
                 </span>
               </div>
@@ -216,21 +216,21 @@ export default function DashboardPage() {
                     }}
                   >
                     <div>
-                      <div style={{ fontSize: 13.5, fontWeight: 600 }}>
+                      <div style={{ fontSize: 14.5, fontWeight: 600 }}>
                         {[s.brand, s.model].filter(Boolean).join(" ") || "Unknown gun"}
                         {s.variantName ? ` · ${s.variantName}` : ""}{" "}
-                        <span className="mono" style={{ color: TEAL, fontSize: 12 }}>
+                        <span className="mono" style={{ color: TEAL, fontSize: 13 }}>
                           {s.caliber}
                         </span>
                       </div>
-                      <div className="mono" style={{ fontSize: 11, color: "#5e7170", marginTop: 3 }}>
+                      <div className="mono" style={{ fontSize: 12, color: "#5e7170", marginTop: 3 }}>
                         {s.projectile} · {s.grains} gr · {s.shotCount} shots
                       </div>
                     </div>
                     <span
                       className="mono"
                       style={{
-                        fontSize: 11,
+                        fontSize: 12,
                         letterSpacing: 0.5,
                         textTransform: "uppercase",
                         color: st.color,
@@ -256,7 +256,7 @@ export default function DashboardPage() {
 function Stat({ label, value, accent }) {
   return (
     <div style={{ background: "#0e1013", border: "1px solid #181b1f", borderRadius: 8, padding: "18px 20px" }}>
-      <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase" }}>
+      <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase" }}>
         {label}
       </div>
       <div style={{ fontSize: 30, fontWeight: 800, marginTop: 6, color: accent || "#e6e7e9" }}>{value}</div>
@@ -270,7 +270,7 @@ const primaryBtn = {
   border: "none",
   borderRadius: 4,
   padding: "11px 18px",
-  fontSize: 13,
+  fontSize: 14,
   fontWeight: 800,
   letterSpacing: 0.3,
   cursor: "pointer",

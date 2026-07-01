@@ -66,7 +66,7 @@ const field = {
   border: "1px solid #23272d",
   borderRadius: 4,
   color: "#e6e7e9",
-  fontSize: 13,
+  fontSize: 14,
   padding: "9px 11px",
   outline: "none",
   width: "100%",
@@ -156,7 +156,7 @@ export default function ManageCatalog() {
 
   return (
     <div>
-      <p style={{ color: "#868d96", fontSize: 13, lineHeight: 1.6, margin: "0 0 16px" }}>
+      <p style={{ color: "#868d96", fontSize: 14, lineHeight: 1.6, margin: "0 0 16px" }}>
         Review what's linked to a catalog entry before you change it.{" "}
         <strong style={{ color: TEAL }}>Rename</strong> fixes the name in place (everything stays linked);{" "}
         <strong style={{ color: TEAL }}>Merge</strong>{" "}
@@ -177,7 +177,7 @@ export default function ManageCatalog() {
               border: "1px solid #23272d",
               borderRadius: 4,
               padding: "7px 13px",
-              fontSize: 11,
+              fontSize: 12,
               letterSpacing: 0.5,
               cursor: "pointer",
               textTransform: "uppercase",
@@ -197,18 +197,18 @@ export default function ManageCatalog() {
       />
 
       {msg && (
-        <div className="mono" style={{ fontSize: 11, color: msg.ok ? TEAL : "#f0a0a0", marginBottom: 14 }}>
+        <div className="mono" style={{ fontSize: 12, color: msg.ok ? TEAL : "#f0a0a0", marginBottom: 14 }}>
           {msg.text}
         </div>
       )}
 
       {loadErr && (
-        <div className="mono" style={{ fontSize: 11, color: "#f0a0a0", marginBottom: 14 }}>
+        <div className="mono" style={{ fontSize: 12, color: "#f0a0a0", marginBottom: 14 }}>
           Couldn't load: {loadErr}
         </div>
       )}
       {data === null && !loadErr && (
-        <div className="mono" style={{ color: "#5e7170", fontSize: 12 }}>Loading…</div>
+        <div className="mono" style={{ color: "#5e7170", fontSize: 13 }}>Loading…</div>
       )}
 
       {data &&
@@ -234,7 +234,7 @@ export default function ManageCatalog() {
         ))}
 
       {data && filtered.length === 0 && (
-        <div style={{ border: "1px dashed #23272d", borderRadius: 8, padding: 32, textAlign: "center", color: "#868d96", fontSize: 13 }}>
+        <div style={{ border: "1px dashed #23272d", borderRadius: 8, padding: 32, textAlign: "center", color: "#868d96", fontSize: 14 }}>
           Nothing here.
         </div>
       )}
@@ -309,13 +309,13 @@ function RecordRow({ rec, siblings, lists, open, onToggle, onDone, onDoneKeepOpe
             {rec.label}
             {rec.sub ? <span style={{ color: "#5e7170", fontWeight: 400 }}>  ·  {rec.sub}</span> : null}
           </div>
-          <div className="mono" style={{ fontSize: 11, color: rec.blocking ? "#868d96" : "#5e7170", marginTop: 3 }}>
+          <div className="mono" style={{ fontSize: 12, color: rec.blocking ? "#868d96" : "#5e7170", marginTop: 3 }}>
             {linked}
           </div>
         </div>
         <span
           className="mono"
-          style={{ fontSize: 11, letterSpacing: 0.5, textTransform: "uppercase", color: statusColor, whiteSpace: "nowrap" }}
+          style={{ fontSize: 12, letterSpacing: 0.5, textTransform: "uppercase", color: statusColor, whiteSpace: "nowrap" }}
         >
           {rec.status || ""}
         </span>
@@ -334,10 +334,10 @@ function RecordRow({ rec, siblings, lists, open, onToggle, onDone, onDoneKeepOpe
           )}
 
           {/* impact preview */}
-          <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 8 }}>
+          <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 8 }}>
             Impact
           </div>
-          <div style={{ fontSize: 13, color: "#cdd2d8", marginBottom: 16 }}>
+          <div style={{ fontSize: 14, color: "#cdd2d8", marginBottom: 16 }}>
             {rec.blocking ? (
               <>Deleting this would orphan <strong style={{ color: AMBER }}>{linked}</strong>. Merge it into another record instead.</>
             ) : (
@@ -348,7 +348,7 @@ function RecordRow({ rec, siblings, lists, open, onToggle, onDone, onDoneKeepOpe
           {/* merge */}
           {rec.mergeable && targets.length > 0 && (
             <div style={{ marginBottom: 16 }}>
-              <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
+              <label className="mono" style={{ display: "block", fontSize: 12, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
                 Merge into
               </label>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -371,7 +371,7 @@ function RecordRow({ rec, siblings, lists, open, onToggle, onDone, onDoneKeepOpe
                     border: `1px solid ${TEAL}`,
                     borderRadius: 4,
                     padding: "6px 16px",
-                    fontSize: 11,
+                    fontSize: 12,
                     fontWeight: 700,
                     letterSpacing: 0.5,
                     cursor: busy || !mergeTarget ? "default" : "pointer",
@@ -398,7 +398,7 @@ function RecordRow({ rec, siblings, lists, open, onToggle, onDone, onDoneKeepOpe
                 border: `1px solid ${rec.blocking ? "#23272d" : RED}`,
                 borderRadius: 4,
                 padding: "6px 16px",
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: 700,
                 letterSpacing: 0.5,
                 cursor: busy || rec.blocking ? "default" : "pointer",
@@ -408,7 +408,7 @@ function RecordRow({ rec, siblings, lists, open, onToggle, onDone, onDoneKeepOpe
               Delete
             </button>
             {rec.blocking && (
-              <span className="mono" style={{ fontSize: 11, color: "#5e7170", marginLeft: 12 }}>
+              <span className="mono" style={{ fontSize: 12, color: "#5e7170", marginLeft: 12 }}>
                 Linked records must be merged or removed first.
               </span>
             )}
@@ -481,13 +481,13 @@ function EditPanel({ rec, lists, onDone, onError }) {
 
   return (
     <div style={{ marginBottom: 18 }}>
-      <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 8 }}>
+      <label className="mono" style={{ display: "block", fontSize: 12, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 8 }}>
         Edit details
       </label>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 12, marginBottom: 12 }}>
         {spec.map((f) => (
           <div key={f.key}>
-            <label className="mono" style={{ display: "block", fontSize: 10.5, letterSpacing: 0.5, color: "#5e7170", textTransform: "uppercase", marginBottom: 5 }}>
+            <label className="mono" style={{ display: "block", fontSize: 11.5, letterSpacing: 0.5, color: "#5e7170", textTransform: "uppercase", marginBottom: 5 }}>
               {f.label}
             </label>
             {f.type === "bool" ? (
@@ -534,7 +534,7 @@ function EditPanel({ rec, lists, onDone, onError }) {
           border: `1px solid ${TEAL}`,
           borderRadius: 4,
           padding: "6px 16px",
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: 700,
           letterSpacing: 0.5,
           cursor: busy ? "default" : "pointer",
@@ -545,7 +545,7 @@ function EditPanel({ rec, lists, onDone, onError }) {
         {busy ? "Saving…" : "Save changes"}
       </button>
       {rec.kind === "brand" && (
-        <span className="mono" style={{ fontSize: 11, color: "#5e7170", marginLeft: 12 }}>
+        <span className="mono" style={{ fontSize: 12, color: "#5e7170", marginLeft: 12 }}>
           The slug updates to match the name.
         </span>
       )}
@@ -561,7 +561,7 @@ function tealBtn(disabled) {
     border: `1px solid ${TEAL}`,
     borderRadius: 4,
     padding: "6px 16px",
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: 700,
     letterSpacing: 0.5,
     cursor: disabled ? "default" : "pointer",
@@ -572,7 +572,7 @@ function tealBtn(disabled) {
 
 const sectionLabel = {
   display: "block",
-  fontSize: 11,
+  fontSize: 12,
   letterSpacing: 1,
   color: "#7b8089",
   textTransform: "uppercase",
@@ -581,7 +581,7 @@ const sectionLabel = {
 
 const microLabel = {
   display: "block",
-  fontSize: 10.5,
+  fontSize: 11.5,
   letterSpacing: 0.5,
   color: "#5e7170",
   textTransform: "uppercase",
@@ -611,7 +611,7 @@ function TankEditor({ rec, onDone, onError }) {
         Air tanks
       </label>
       {tanks.length === 0 && (
-        <div style={{ fontSize: 12, color: "#5e7170", marginBottom: 12 }}>
+        <div style={{ fontSize: 13, color: "#5e7170", marginBottom: 12 }}>
           No tank on record. Add one — a volume is needed for air-efficiency math.
         </div>
       )}
@@ -713,7 +713,7 @@ function TankRow({ tank, isRegulated, onDone, onError }) {
             border: `1px solid ${RED}`,
             borderRadius: 4,
             padding: "6px 16px",
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
             letterSpacing: 0.5,
             cursor: busy ? "default" : "pointer",

@@ -24,7 +24,7 @@ const fieldStyle = {
   border: "1px solid #23272d",
   borderRadius: 4,
   color: "#e6e7e9",
-  fontSize: 13,
+  fontSize: 14,
   padding: "10px 12px",
   outline: "none",
   width: "100%",
@@ -148,7 +148,7 @@ export default function SubmitPage() {
     return (
       <div style={{ minHeight: "100vh" }}>
         <SiteNav active="submit" />
-        <div className="mono" style={{ padding: 60, color: "#5e7170", fontSize: 12 }}>
+        <div className="mono" style={{ padding: 60, color: "#5e7170", fontSize: 13 }}>
           Loading…
         </div>
       </div>
@@ -191,7 +191,7 @@ export default function SubmitPage() {
             <h2 style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>
               Sign in to submit your string
             </h2>
-            <p style={{ color: "#868d96", fontSize: 13.5, lineHeight: 1.6, margin: "10px 0 20px" }}>
+            <p style={{ color: "#868d96", fontSize: 14.5, lineHeight: 1.6, margin: "10px 0 20px" }}>
               You'll come straight back to the submission form after signing in. This also creates
               your creator dashboard.
             </p>
@@ -213,7 +213,7 @@ export default function SubmitPage() {
                 border: "1px solid #8e918f",
                 borderRadius: 4,
                 padding: "11px 14px",
-                fontSize: 13,
+                fontSize: 14,
                 fontWeight: 700,
                 cursor: "pointer",
                 fontFamily: "inherit",
@@ -350,7 +350,7 @@ export default function SubmitPage() {
     <div style={{ minHeight: "100vh" }}>
       <SiteNav active="submit" />
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "44px 24px 90px" }}>
-        <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: TEAL, marginBottom: 8 }}>
+        <div className="mono" style={{ fontSize: 12, letterSpacing: 2, color: TEAL, marginBottom: 8 }}>
           NEW SUBMISSION
         </div>
         <h1 style={{ fontSize: 38, fontWeight: 800, letterSpacing: -1.4, lineHeight: 1 }}>
@@ -469,7 +469,7 @@ export default function SubmitPage() {
               </Field>
             )}
             {selectedProj && (
-              <p className="mono" style={{ fontSize: 11, color: "#5e7170", marginTop: 2 }}>
+              <p className="mono" style={{ fontSize: 12, color: "#5e7170", marginTop: 2 }}>
                 SNAPSHOT · {selectedProj.weight_grains} GR · {caliberName}
               </p>
             )}
@@ -548,12 +548,12 @@ export default function SubmitPage() {
             }
           >
             {!variantId && (
-              <p className="mono" style={{ fontSize: 11, color: "#5e7170" }}>
+              <p className="mono" style={{ fontSize: 12, color: "#5e7170" }}>
                 SELECT THE GUN TO SEE ITS TANK(S)
               </p>
             )}
             {variantId && tanks.length === 0 && (
-              <p className="mono" style={{ fontSize: 11, color: "#5e7170" }}>
+              <p className="mono" style={{ fontSize: 12, color: "#5e7170" }}>
                 NO TANK DATA IN CATALOG FOR THIS VARIANT
               </p>
             )}
@@ -567,7 +567,7 @@ export default function SubmitPage() {
                     {tanks.length > 1 && (
                       <div
                         className="mono"
-                        style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", marginBottom: 6, textTransform: "uppercase" }}
+                        style={{ fontSize: 12, letterSpacing: 1, color: "#7b8089", marginBottom: 6, textTransform: "uppercase" }}
                       >
                         {tanks.length} connected tanks
                         {tanks.some((t) => t.volume_cc)
@@ -602,7 +602,7 @@ export default function SubmitPage() {
                       {tanks.length > 1 && (
                         <div
                           className="mono"
-                          style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", marginBottom: 6, textTransform: "uppercase" }}
+                          style={{ fontSize: 12, letterSpacing: 1, color: "#7b8089", marginBottom: 6, textTransform: "uppercase" }}
                         >
                           {tankRoleShort(t.role)} tank{t.volume_cc ? ` · ${t.volume_cc} cc` : ""}
                         </div>
@@ -647,7 +647,7 @@ export default function SubmitPage() {
                 color: "#f0a0a0",
                 borderRadius: 4,
                 padding: "11px 14px",
-                fontSize: 13,
+                fontSize: 14,
                 marginBottom: 18,
               }}
             >
@@ -659,7 +659,7 @@ export default function SubmitPage() {
             <button type="submit" disabled={busy} style={{ ...primaryBtn, opacity: busy ? 0.6 : 1 }}>
               {busy ? "Submitting…" : "Submit for review"}
             </button>
-            <span className="mono" style={{ fontSize: 11, color: "#5e7170", letterSpacing: 0.5 }}>
+            <span className="mono" style={{ fontSize: 12, color: "#5e7170", letterSpacing: 0.5 }}>
               REVIEWED BEFORE GOING PUBLIC
             </span>
           </div>
@@ -682,12 +682,12 @@ function Section({ n, title, hint, children }) {
       }}
     >
       <div>
-        <div className="mono" style={{ fontSize: 11, color: TEAL, letterSpacing: 1 }}>
+        <div className="mono" style={{ fontSize: 12, color: TEAL, letterSpacing: 1 }}>
           {n}
         </div>
         <div style={{ fontSize: 16, fontWeight: 700, marginTop: 6 }}>{title}</div>
         {hint && (
-          <div style={{ fontSize: 11.5, color: "#5e7170", marginTop: 6, lineHeight: 1.5 }}>{hint}</div>
+          <div style={{ fontSize: 12.5, color: "#5e7170", marginTop: 6, lineHeight: 1.5 }}>{hint}</div>
         )}
       </div>
       <div>{children}</div>
@@ -702,7 +702,7 @@ function Field({ label, required, hint, children }) {
         className="mono"
         style={{
           display: "block",
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: 1,
           color: "#7b8089",
           textTransform: "uppercase",
@@ -713,7 +713,7 @@ function Field({ label, required, hint, children }) {
         {required && <span style={{ color: TEAL }}> *</span>}
       </label>
       {children}
-      {hint && <div style={{ fontSize: 11, color: "#5e7170", marginTop: 6, lineHeight: 1.4 }}>{hint}</div>}
+      {hint && <div style={{ fontSize: 12, color: "#5e7170", marginTop: 6, lineHeight: 1.4 }}>{hint}</div>}
     </div>
   );
 }
@@ -760,7 +760,7 @@ function SmallToggle({ value, onChange, options }) {
             color: value === o ? "#06100e" : "#7b8089",
             border: "none",
             padding: "0 12px",
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
             cursor: "pointer",
             textTransform: "uppercase",
@@ -779,7 +779,7 @@ const primaryBtn = {
   border: "none",
   borderRadius: 4,
   padding: "12px 22px",
-  fontSize: 13,
+  fontSize: 14,
   fontWeight: 800,
   letterSpacing: 0.3,
   cursor: "pointer",
@@ -794,7 +794,7 @@ const ghostBtn = {
   border: "1px solid #23272d",
   borderRadius: 4,
   padding: "12px 22px",
-  fontSize: 13,
+  fontSize: 14,
   fontWeight: 700,
   cursor: "pointer",
   fontFamily: "inherit",

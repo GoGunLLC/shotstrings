@@ -49,7 +49,7 @@ const field = {
   border: "1px solid #23272d",
   borderRadius: 4,
   color: "#e6e7e9",
-  fontSize: 13,
+  fontSize: 14,
   padding: "9px 11px",
   outline: "none",
   width: "100%",
@@ -455,7 +455,7 @@ export default function Home() {
               <div
                 className="mono"
                 style={{
-                  fontSize: 12,
+                  fontSize: 13,
                   letterSpacing: 2,
                   color: "#5e7170",
                   display: "flex",
@@ -528,7 +528,7 @@ export default function Home() {
                   border: "none",
                   borderRadius: 6,
                   padding: "11px 20px",
-                  fontSize: 13,
+                  fontSize: 14,
                   fontWeight: 800,
                   letterSpacing: 0.5,
                   textDecoration: "none",
@@ -538,7 +538,7 @@ export default function Home() {
               >
                 <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Submit your shot string
               </a>
-              <span style={{ color: "#5e7170", fontSize: 13 }}>
+              <span style={{ color: "#5e7170", fontSize: 14 }}>
                 Got chrono data? Add your rifle to the database.
               </span>
             </div>
@@ -591,7 +591,7 @@ export default function Home() {
                 border: "1px solid #23272d",
                 borderRadius: 5,
                 padding: "6px 11px",
-                fontSize: 11,
+                fontSize: 12,
                 letterSpacing: 1,
                 cursor: "pointer",
                 textTransform: "uppercase",
@@ -599,7 +599,7 @@ export default function Home() {
             >
               ← Back
             </button>
-            <div className="mono" style={{ fontSize: 10, letterSpacing: 2, color: "#5e7170" }}>
+            <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: "#5e7170" }}>
               COMPARISON
             </div>
             <button
@@ -632,7 +632,7 @@ export default function Home() {
           <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px", flex: "0 0 auto" }}>
             <div
               className="mono"
-              style={{ display: "flex", border: "1px solid #23272d", borderRadius: 3, overflow: "hidden", fontSize: 11, letterSpacing: 1 }}
+              style={{ display: "flex", border: "1px solid #23272d", borderRadius: 3, overflow: "hidden", fontSize: 12, letterSpacing: 1 }}
             >
               {METRICS.map((mt) => {
                 const on = metric === mt.key;
@@ -736,12 +736,12 @@ export default function Home() {
               {selGuns.map((g) => (
                 <div key={g.id} style={{ display: "flex", alignItems: "center", gap: 7, minWidth: 0 }}>
                   <span style={{ width: 8, height: 8, borderRadius: "50%", background: g.color, flex: "0 0 auto" }} />
-                  <span style={{ fontSize: 11, color: "#cdd2d8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  <span style={{ fontSize: 12, color: "#cdd2d8", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                     {g.brand} {g.model}
                   </span>
-                  <span className="mono" style={{ fontSize: 11, color: "#e7ebef", marginLeft: "auto", flex: "0 0 auto" }}>
+                  <span className="mono" style={{ fontSize: 12, color: "#e7ebef", marginLeft: "auto", flex: "0 0 auto" }}>
                     {metric === "vel" ? g.mv : metric === "fpe" ? g.afpe : g.sd}
-                    <span style={{ fontSize: 8, color: "#5e7170", marginLeft: 2 }}>
+                    <span style={{ fontSize: 10, color: "#5e7170", marginLeft: 2 }}>
                       {metric === "vel" ? "fps" : metric === "fpe" ? "ft·lb" : "sd"}
                     </span>
                   </span>
@@ -753,14 +753,14 @@ export default function Home() {
                 overscroll so a flick that hits the top/bottom of this list stays
                 here instead of chaining to the graph/page behind the sheet. */}
             <div style={{ overflowY: "auto", overscrollBehavior: "contain", padding: "14px 14px 60px", flex: "1 1 auto", WebkitOverflowScrolling: "touch" }}>
-              <div className="mono" style={{ fontSize: 9, letterSpacing: 2, color: "#5e7170", marginBottom: 10 }}>
+              <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: "#5e7170", marginBottom: 10 }}>
                 SELECTED · FULL STATS
               </div>
               {selGuns.map((g) => (
                 <div key={g.id} style={{ border: "1px solid #181b1f", borderRadius: 6, padding: "12px 13px", marginBottom: 8 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 11 }}>
                     <span style={{ width: 9, height: 9, borderRadius: "50%", background: g.color, flex: "0 0 auto" }} />
-                    <div style={{ flex: 1, minWidth: 0, fontWeight: 800, letterSpacing: "-.3px", fontSize: 13, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    <div style={{ flex: 1, minWidth: 0, fontWeight: 800, letterSpacing: "-.3px", fontSize: 14, textTransform: "uppercase", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                       {g.brand} {g.model}{g.variantName ? ` · ${g.variantName}` : ""} <span style={{ color: TEAL }}>{g.calDisp}</span>
                     </div>
                     <button
@@ -781,7 +781,7 @@ export default function Home() {
                 </div>
               ))}
 
-              <div className="mono" style={{ fontSize: 9, letterSpacing: 2, color: "#5e7170", margin: "16px 0 10px" }}>
+              <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: "#5e7170", margin: "16px 0 10px" }}>
                 ADD MORE
               </div>
               <SearchBox
@@ -851,7 +851,7 @@ export default function Home() {
                   gap: 10,
                 }}
               >
-                <div className="mono" style={{ fontSize: 11, letterSpacing: 2, color: "#5e7170" }}>
+                <div className="mono" style={{ fontSize: 12, letterSpacing: 2, color: "#5e7170" }}>
                   SHOT-STRING COMPARISON
                 </div>
                 {/* stretch so the Share button matches the metric toggle's height */}
@@ -863,7 +863,7 @@ export default function Home() {
                     border: "1px solid #23272d",
                     borderRadius: 3,
                     overflow: "hidden",
-                    fontSize: 11,
+                    fontSize: 12,
                     letterSpacing: 1,
                   }}
                 >
@@ -902,7 +902,7 @@ export default function Home() {
                     borderRadius: 3,
                     color: selGuns.length ? "#cdd2d8" : "#3f474a",
                     padding: "6px 12px",
-                    fontSize: 11,
+                    fontSize: 12,
                     letterSpacing: 1,
                     textTransform: "uppercase",
                     cursor: selGuns.length ? "pointer" : "not-allowed",
@@ -1028,7 +1028,7 @@ export default function Home() {
                 border: "1px solid #23272d",
                 borderRadius: 4,
                 padding: "8px 14px",
-                fontSize: 11,
+                fontSize: 12,
                 letterSpacing: 1,
                 cursor: "pointer",
                 textTransform: "uppercase",
@@ -1225,7 +1225,7 @@ function SearchBox({ query, setQuery, matches, onPick, placeholder }) {
                 <div
                   style={{
                     fontWeight: 700,
-                    fontSize: 13,
+                    fontSize: 14,
                     textTransform: "uppercase",
                     letterSpacing: 0.3,
                   }}
@@ -1234,7 +1234,7 @@ function SearchBox({ query, setQuery, matches, onPick, placeholder }) {
                 </div>
                 <div
                   className="mono"
-                  style={{ fontSize: 11, color: "#7b8089", letterSpacing: 1, marginTop: 2 }}
+                  style={{ fontSize: 12, color: "#7b8089", letterSpacing: 1, marginTop: 2 }}
                 >
                   {m.cal} cal · {m.fill}
                 </div>
@@ -1255,7 +1255,7 @@ function FilterSelect({ label, value, onChange, children }) {
         className="mono"
         style={{
           display: "block",
-          fontSize: 11,
+          fontSize: 12,
           letterSpacing: 1,
           color: "#7b8089",
           textTransform: "uppercase",
@@ -1373,7 +1373,7 @@ function Browse({ results, total, options, filters, setFilters, selected, onTogg
             gap: 10,
           }}
         >
-          <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5e7170", display: "flex", alignItems: "center", gap: 9 }}>
+          <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#5e7170", display: "flex", alignItems: "center", gap: 9 }}>
             {anyFilter ? (
               `${results.length} OF ${total} SHOT STRING${total === 1 ? "" : "S"}`
             ) : (
@@ -1393,7 +1393,7 @@ function Browse({ results, total, options, filters, setFilters, selected, onTogg
                 border: "1px solid #23272d",
                 borderRadius: 4,
                 padding: "6px 12px",
-                fontSize: 11,
+                fontSize: 12,
                 letterSpacing: 1,
                 cursor: "pointer",
                 textTransform: "uppercase",
@@ -1427,11 +1427,11 @@ function Browse({ results, total, options, filters, setFilters, selected, onTogg
             padding: 40,
             textAlign: "center",
             color: "#868d96",
-            fontSize: 13,
+            fontSize: 14,
           }}
         >
           <div style={{ marginBottom: 6 }}>No shot strings match these filters.</div>
-          <div style={{ fontSize: 13, lineHeight: 1.6 }}>
+          <div style={{ fontSize: 14, lineHeight: 1.6 }}>
             Got one that fits?{" "}
             <a
               href="/submit"
@@ -1507,7 +1507,7 @@ function ConfigChip({ children, accent }) {
     <span
       className="mono"
       style={{
-        fontSize: 11,
+        fontSize: 12,
         letterSpacing: 0.5,
         color: accent ? "#06100e" : "#aeb4bc",
         background: accent ? TEAL : "transparent",
@@ -1582,7 +1582,7 @@ function FeedCard({ g, selected, onToggle }) {
             position: "absolute",
             bottom: 8,
             left: 9,
-            fontSize: 11,
+            fontSize: 12,
             letterSpacing: 1,
             color: "#5e7170",
             background: "rgba(8,10,13,.7)",
@@ -1599,7 +1599,7 @@ function FeedCard({ g, selected, onToggle }) {
               position: "absolute",
               top: 8,
               right: 9,
-              fontSize: 11,
+              fontSize: 12,
               letterSpacing: 1,
               color: g.color,
               background: "rgba(8,10,13,.7)",
@@ -1628,7 +1628,7 @@ function FeedCard({ g, selected, onToggle }) {
           </div>
           <div
             className="mono"
-            style={{ fontSize: 11, color: "#7b8089", letterSpacing: 0.5, marginTop: 3 }}
+            style={{ fontSize: 12, color: "#7b8089", letterSpacing: 0.5, marginTop: 3 }}
           >
             {g.projectile || "Custom projectile"} · {g.grains} gr
           </div>
@@ -1665,7 +1665,7 @@ function FeedCard({ g, selected, onToggle }) {
             display: "flex",
             alignItems: "center",
             justifyContent: "space-between",
-            fontSize: 11,
+            fontSize: 12,
             letterSpacing: 0.5,
             color: "#5f656e",
           }}
@@ -1719,7 +1719,7 @@ function CompareBar({ count, onDisplay, onClear }) {
         boxShadow: "0 -10px 30px rgba(0,0,0,.45)",
       }}
     >
-      <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#cdd2d8" }}>
+      <div className="mono" style={{ fontSize: 13, letterSpacing: 1, color: "#cdd2d8" }}>
         <span style={{ color: TEAL, fontWeight: 700 }}>{count}</span> SHOT STRING{count === 1 ? "" : "S"} SELECTED
         <span
           onClick={onClear}
@@ -1737,7 +1737,7 @@ function CompareBar({ count, onDisplay, onClear }) {
           border: "none",
           borderRadius: 4,
           padding: "11px 22px",
-          fontSize: 12,
+          fontSize: 13,
           fontWeight: 700,
           letterSpacing: 1,
           cursor: "pointer",
@@ -1816,7 +1816,7 @@ function ShareModal({ graphQuery, embedQuery, count, onClose }) {
           borderBottom: `2px solid ${on ? TEAL : "transparent"}`,
           color: on ? "#e6e7e9" : "#7b8089",
           fontWeight: on ? 700 : 400,
-          fontSize: 12,
+          fontSize: 13,
           letterSpacing: 1,
           textTransform: "uppercase",
           cursor: "pointer",
@@ -1839,7 +1839,7 @@ function ShareModal({ graphQuery, embedQuery, count, onClose }) {
         border: `1px solid ${copied === which ? TEAL : "#23272d"}`,
         borderRadius: 4,
         padding: "0 16px",
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: 700,
         letterSpacing: 1,
         textTransform: "uppercase",
@@ -1920,7 +1920,7 @@ function ShareModal({ graphQuery, embedQuery, count, onClose }) {
         <div style={{ padding: 18 }}>
           {tab === "link" ? (
             <>
-              <p style={{ color: "#868d96", fontSize: 13, lineHeight: 1.5, margin: "0 0 12px" }}>
+              <p style={{ color: "#868d96", fontSize: 14, lineHeight: 1.5, margin: "0 0 12px" }}>
                 Anyone with this link opens the same {count} shot string{count === 1 ? "" : "s"} on the
                 exact metric you&apos;re viewing.
               </p>
@@ -1930,14 +1930,14 @@ function ShareModal({ graphQuery, embedQuery, count, onClose }) {
                   value={linkUrl}
                   onFocus={(e) => e.target.select()}
                   className="mono"
-                  style={{ ...field, flex: 1, fontSize: 12 }}
+                  style={{ ...field, flex: 1, fontSize: 13 }}
                 />
                 {copyBtn(linkUrl, "link")}
               </div>
             </>
           ) : (
             <>
-              <p style={{ color: "#868d96", fontSize: 13, lineHeight: 1.5, margin: "0 0 12px" }}>
+              <p style={{ color: "#868d96", fontSize: 14, lineHeight: 1.5, margin: "0 0 12px" }}>
                 Paste this into a forum post, blog, or product page (Shopify, etc.) to embed the live
                 graph — just like a YouTube video.
               </p>
@@ -1945,7 +1945,7 @@ function ShareModal({ graphQuery, embedQuery, count, onClose }) {
               {/* size controls */}
               <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginBottom: 12 }}>
                 <div>
-                  <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
+                  <label className="mono" style={{ display: "block", fontSize: 12, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
                     Width
                   </label>
                   <input
@@ -1959,7 +1959,7 @@ function ShareModal({ graphQuery, embedQuery, count, onClose }) {
                 </div>
                 <span style={{ color: "#5f656e", paddingBottom: 9 }}>×</span>
                 <div>
-                  <label className="mono" style={{ display: "block", fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
+                  <label className="mono" style={{ display: "block", fontSize: 12, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", marginBottom: 6 }}>
                     Height
                   </label>
                   <input
@@ -1983,7 +1983,7 @@ function ShareModal({ graphQuery, embedQuery, count, onClose }) {
                     borderRadius: 4,
                     color: "#7b8089",
                     padding: "9px 12px",
-                    fontSize: 11,
+                    fontSize: 12,
                     letterSpacing: 1,
                     textTransform: "uppercase",
                     cursor: "pointer",
@@ -2000,7 +2000,7 @@ function ShareModal({ graphQuery, embedQuery, count, onClose }) {
                 onFocus={(e) => e.target.select()}
                 rows={3}
                 className="mono"
-                style={{ ...field, width: "100%", resize: "vertical", fontSize: 12, lineHeight: 1.5, marginBottom: 10 }}
+                style={{ ...field, width: "100%", resize: "vertical", fontSize: 13, lineHeight: 1.5, marginBottom: 10 }}
               />
               <div style={{ display: "flex", justifyContent: "flex-end" }}>{copyBtn(iframeCode, "embed")}</div>
             </>
@@ -2014,7 +2014,7 @@ function ShareModal({ graphQuery, embedQuery, count, onClose }) {
 function Stat({ label, value, unit, accent }) {
   return (
     <div>
-      <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5f656e" }}>
+      <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#5f656e" }}>
         {label}
       </div>
       <div
@@ -2022,7 +2022,7 @@ function Stat({ label, value, unit, accent }) {
         style={{ fontSize: 17, fontWeight: 700, color: accent ? "#2fb8a0" : "#e6e7e9" }}
       >
         {value}
-        <span style={{ fontSize: 11, color: "#5f656e" }}>{unit}</span>
+        <span style={{ fontSize: 12, color: "#5f656e" }}>{unit}</span>
       </div>
     </div>
   );

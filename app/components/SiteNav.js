@@ -109,7 +109,7 @@ export default function SiteNav({ active }) {
           display: "flex",
           justifyContent: "center",
           gap: 28,
-          fontSize: 13,
+          fontSize: 14,
           letterSpacing: 1,
           textTransform: "uppercase",
         }}
@@ -144,7 +144,7 @@ export default function SiteNav({ active }) {
                 borderRadius: "50%",
                 background: TEAL,
                 color: "#06100e",
-                fontSize: 12,
+                fontSize: 13,
                 fontWeight: 800,
                 display: "flex",
                 alignItems: "center",
@@ -174,7 +174,7 @@ export default function SiteNav({ active }) {
                   className="mono"
                   style={{
                     padding: "11px 14px",
-                    fontSize: 11,
+                    fontSize: 12,
                     color: "#5e7170",
                     borderBottom: "1px solid #181b1f",
                     whiteSpace: "nowrap",
@@ -192,7 +192,7 @@ export default function SiteNav({ active }) {
                   className="mono"
                   style={{
                     padding: "11px 14px",
-                    fontSize: 11,
+                    fontSize: 12,
                     letterSpacing: 0.5,
                     color: "#7b8089",
                     cursor: "pointer",
@@ -217,7 +217,7 @@ export default function SiteNav({ active }) {
               border: "1px solid #8e918f",
               borderRadius: 4,
               padding: "8px 14px",
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: 700,
               cursor: "pointer",
               fontFamily: "inherit",
@@ -310,7 +310,7 @@ export default function SiteNav({ active }) {
                   boxShadow: "0 0 7px 1px rgba(47,184,160,.85), inset 0 0 2px rgba(255,255,255,.5)",
                 }}
               />
-              <div style={{ fontWeight: 800, letterSpacing: 4, fontSize: 13 }}>SHOTSTRINGS</div>
+              <div style={{ fontWeight: 800, letterSpacing: 4, fontSize: 14 }}>SHOTSTRINGS</div>
             </div>
             <button
               onClick={() => setMobileOpen(false)}
@@ -347,7 +347,7 @@ export default function SiteNav({ active }) {
               style={{
                 display: "block",
                 padding: "12px 16px",
-                fontSize: 13,
+                fontSize: 14,
                 letterSpacing: 1,
                 color: "#aeb4bc",
                 cursor: "pointer",
@@ -384,7 +384,7 @@ export default function SiteNav({ active }) {
                       <div
                         className="mono"
                         style={{
-                          fontSize: 11,
+                          fontSize: 12,
                           letterSpacing: 1,
                           color: "#5e7170",
                           textTransform: "uppercase",
@@ -398,7 +398,7 @@ export default function SiteNav({ active }) {
                       </div>
                       <div
                         style={{
-                          fontSize: 13.5,
+                          fontSize: 14.5,
                           color: "#e6e7e9",
                           whiteSpace: "nowrap",
                           overflow: "hidden",
@@ -418,7 +418,7 @@ export default function SiteNav({ active }) {
                     className="mono"
                     style={{
                       padding: "12px 16px",
-                      fontSize: 12,
+                      fontSize: 13,
                       letterSpacing: 0.5,
                       color: "#7b8089",
                       cursor: "pointer",
@@ -441,7 +441,7 @@ export default function SiteNav({ active }) {
                     alignItems: "center",
                     gap: 9,
                     padding: "13px 16px",
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: 700,
                     color: "#e6e7e9",
                     cursor: "pointer",
@@ -470,7 +470,7 @@ function MobileLink({ href, label, active, accent, onNav }) {
       style={{
         display: "block",
         padding: "12px 16px",
-        fontSize: 13,
+        fontSize: 14,
         letterSpacing: 1,
         color,
         textDecoration: "none",
@@ -492,7 +492,7 @@ function MenuLink({ href, label }) {
       style={{
         display: "block",
         padding: "11px 14px",
-        fontSize: 11,
+        fontSize: 12,
         letterSpacing: 0.5,
         color: "#cdd2d8",
         textDecoration: "none",

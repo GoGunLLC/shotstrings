@@ -39,7 +39,7 @@ export default function SiteFooter() {
             boxShadow: "0 0 6px 1px rgba(47,184,160,.7)",
           }}
         />
-        <span className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#5e7170" }}>
+        <span className="mono" style={{ fontSize: 13, letterSpacing: 1, color: "#5e7170" }}>
           © {year} GoGun LLC
         </span>
       </div>
@@ -49,7 +49,7 @@ export default function SiteFooter() {
         style={{
           display: "flex",
           gap: 22,
-          fontSize: 12,
+          fontSize: 13,
           letterSpacing: 1,
           textTransform: "uppercase",
           flexWrap: "wrap",

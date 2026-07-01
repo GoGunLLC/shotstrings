@@ -21,7 +21,7 @@ input::placeholder {
 }
 
 .airgun-search {
-  font-size: 13px;
+  font-size: 14px;
   /* Native caret is hidden; a custom teal caret (.spotlight-caret) is drawn on
      top so its blink can fade smoothly on a single, consistent timer. */
   caret-color: transparent;

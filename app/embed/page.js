@@ -195,7 +195,7 @@ export default function Embed() {
           flex: "0 0 auto",
         }}
       >
-        <div className="mono" style={{ fontSize: 10, letterSpacing: 1.5, color: "#5e7170", whiteSpace: "nowrap" }}>
+        <div className="mono" style={{ fontSize: 11, letterSpacing: 1.5, color: "#5e7170", whiteSpace: "nowrap" }}>
           SHOT-STRING COMPARISON
         </div>
         <div
@@ -205,7 +205,7 @@ export default function Embed() {
             border: "1px solid #23272d",
             borderRadius: 3,
             overflow: "hidden",
-            fontSize: 10,
+            fontSize: 11,
             letterSpacing: 1,
             flex: "0 0 auto",
           }}
@@ -245,7 +245,7 @@ export default function Embed() {
               textAlign: "center",
               padding: 16,
               color: "#5e7170",
-              fontSize: 12,
+              fontSize: 13,
               letterSpacing: 1,
             }}
           >
@@ -279,7 +279,7 @@ export default function Embed() {
             color: "#e6e7e9",
             textDecoration: "none",
             fontWeight: 800,
-            fontSize: 12,
+            fontSize: 13,
             letterSpacing: "-.3px",
           }}
         >
@@ -301,7 +301,7 @@ export default function Embed() {
           target="_blank"
           rel="noopener noreferrer"
           className="mono"
-          style={{ color: "#5e7170", textDecoration: "none", fontSize: 10, letterSpacing: 1 }}
+          style={{ color: "#5e7170", textDecoration: "none", fontSize: 11, letterSpacing: 1 }}
         >
           OPEN FULL VIEW ↗
         </a>

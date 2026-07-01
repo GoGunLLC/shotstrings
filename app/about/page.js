@@ -13,7 +13,7 @@ function SectionLabel({ children }) {
     <div
       className="mono"
       style={{
-        fontSize: 13,
+        fontSize: 14,
         letterSpacing: 2,
         color: "#5e7170",
         textTransform: "uppercase",
@@ -41,7 +41,7 @@ function Step({ n, title, children }) {
     >
       <div
         className="mono"
-        style={{ fontSize: 12, color: TEAL, letterSpacing: 1, marginBottom: 10 }}
+        style={{ fontSize: 13, color: TEAL, letterSpacing: 1, marginBottom: 10 }}
       >
         0{n}
       </div>
@@ -181,7 +181,7 @@ export default function AboutPage() {
             style={{
               background: TEAL,
               color: "#06100e",
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 700,
               letterSpacing: 1,
               padding: "13px 22px",
@@ -198,7 +198,7 @@ export default function AboutPage() {
             style={{
               border: "1px solid #2a2f35",
               color: "#cdd2d8",
-              fontSize: 13,
+              fontSize: 14,
               fontWeight: 700,
               letterSpacing: 1,
               padding: "13px 22px",

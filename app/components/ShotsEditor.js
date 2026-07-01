@@ -30,7 +30,7 @@ const fieldBase = {
   border: "1px solid #23272d",
   borderRadius: 4,
   color: "#e6e7e9",
-  fontSize: 13,
+  fontSize: 14,
   padding: "8px 10px",
   outline: "none",
   fontFamily: "var(--font-mono), 'Space Mono', monospace",
@@ -123,7 +123,7 @@ export default function ShotsEditor({ shots, onChange, simpleStatus = false }) {
           borderRadius: 6,
           padding: "10px 12px",
           marginBottom: 14,
-          fontSize: 12.5,
+          fontSize: 13.5,
           lineHeight: 1.55,
           color: "#b9c2c2",
         }}
@@ -155,22 +155,24 @@ export default function ShotsEditor({ shots, onChange, simpleStatus = false }) {
           value={paste}
           onChange={(e) => setPaste(e.target.value)}
           placeholder={`Paste velocities from your chrono — one per line, or separated by spaces/commas.\nExample: 918  921  x  925  930\n(values read as ${unitLabel}; use "x" for a shot the chrono didn't read)`}
-          rows={4}
+          rows={5}
           wrap="soft"
           style={{ ...fieldBase, width: "100%", boxSizing: "border-box", resize: "vertical", lineHeight: 1.5, whiteSpace: "pre-wrap", overflowWrap: "break-word" }}
         />
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8, flexWrap: "wrap" }}>
           <button type="button" onClick={applyPaste} style={pasteBtn}>
             Load pasted shots
           </button>
-          <span className="mono" style={{ fontSize: 11, color: "#5e7170", letterSpacing: 0.5 }}>
-            REPLACES THE GRID BELOW
-          </span>
-          <span style={{ flex: 1 }} />
-          <span className="mono" style={{ fontSize: 11, color: "#5e7170", letterSpacing: 0.5 }}>
-            ENTRY UNIT
-          </span>
-          <UnitToggle value={unit} onChange={switchUnit} options={[["fps", "FPS"], ["mps", "M/S"]]} />
+          <span style={{ color: "#5e7170", fontSize: 13 }}>or</span>
+          <button type="button" onClick={addRow} style={pasteBtn}>
+            + Add shot
+          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginLeft: "auto" }}>
+            <span className="mono" style={{ fontSize: 12, color: "#5e7170", letterSpacing: 0.5 }}>
+              ENTRY UNIT
+            </span>
+            <UnitToggle value={unit} onChange={switchUnit} options={[["fps", "FPS"], ["mps", "M/S"]]} />
+          </div>
         </div>
       </div>
 
@@ -190,7 +192,7 @@ export default function ShotsEditor({ shots, onChange, simpleStatus = false }) {
               gap: 10,
               padding: "9px 12px",
               background: "#0b0d10",
-              fontSize: 11,
+              fontSize: 12,
               letterSpacing: 1,
               color: "#5e7170",
               textTransform: "uppercase",
@@ -214,7 +216,7 @@ export default function ShotsEditor({ shots, onChange, simpleStatus = false }) {
                   borderTop: "1px solid #141619",
                 }}
               >
-                <span className="mono" style={{ fontSize: 12, color: "#7b8089" }}>
+                <span className="mono" style={{ fontSize: 13, color: "#7b8089" }}>
                   {i + 1}
                 </span>
                 <input
@@ -264,17 +266,14 @@ export default function ShotsEditor({ shots, onChange, simpleStatus = false }) {
         </div>
       )}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 10 }}>
-        <button type="button" onClick={addRow} style={pasteBtn}>
-          + Add shot
-        </button>
-        {shots.length > 0 && (
-          <span className="mono" style={{ fontSize: 11, color: "#5e7170", letterSpacing: 0.5 }}>
+      {shots.length > 0 && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", marginTop: 10 }}>
+          <span className="mono" style={{ fontSize: 12, color: "#5e7170", letterSpacing: 0.5 }}>
             {shots.length} SHOTS · {measured} MEASURED
             {estimated ? ` · ${estimated} UNREAD` : ""}
           </span>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -293,7 +292,7 @@ function UnitToggle({ value, onChange, options }) {
             color: value === key ? "#06100e" : "#7b8089",
             border: "none",
             padding: "5px 11px",
-            fontSize: 11,
+            fontSize: 12,
             fontWeight: 700,
             cursor: "pointer",
             textTransform: "uppercase",
@@ -312,7 +311,7 @@ const pasteBtn = {
   color: TEAL,
   borderRadius: 4,
   padding: "7px 13px",
-  fontSize: 11,
+  fontSize: 12,
   fontWeight: 700,
   letterSpacing: 0.5,
   cursor: "pointer",
