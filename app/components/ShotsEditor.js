@@ -115,9 +115,10 @@ export default function ShotsEditor({ shots, onChange, simpleStatus = false }) {
         <textarea
           value={paste}
           onChange={(e) => setPaste(e.target.value)}
-          placeholder={`Paste velocities from your chrono — one per line or separated by spaces/commas.\n918  921  x  925  930  ...   (values read as ${unitLabel}; use x for a shot the chrono didn't read)`}
-          rows={3}
-          style={{ ...fieldBase, width: "100%", resize: "vertical", lineHeight: 1.5 }}
+          placeholder={`Paste velocities from your chrono — one per line, or separated by spaces/commas.\nExample: 918  921  x  925  930\n(values read as ${unitLabel}; use "x" for a shot the chrono didn't read)`}
+          rows={4}
+          wrap="soft"
+          style={{ ...fieldBase, width: "100%", boxSizing: "border-box", resize: "vertical", lineHeight: 1.5, whiteSpace: "pre-wrap", overflowWrap: "break-word" }}
         />
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 8 }}>
           <button type="button" onClick={applyPaste} style={pasteBtn}>
