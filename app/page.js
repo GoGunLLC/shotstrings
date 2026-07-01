@@ -494,6 +494,44 @@ export default function Home() {
                 placeholder={isMobile ? "Search here" : "Search an airgun — FX Impact, Red Wolf…"}
               />
             </div>
+
+            {/* submit CTA — makes the "you can contribute" path obvious to
+                first-time visitors, who otherwise only see the search box. */}
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: isMobile ? 8 : 12,
+                margin: "18px auto 0",
+              }}
+            >
+              <a
+                href="/submit"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 8,
+                  background: TEAL,
+                  color: "#06100e",
+                  border: "none",
+                  borderRadius: 6,
+                  padding: "11px 20px",
+                  fontSize: 13,
+                  fontWeight: 800,
+                  letterSpacing: 0.5,
+                  textDecoration: "none",
+                  textTransform: "uppercase",
+                  fontFamily: "var(--font-mono), 'Space Mono', monospace",
+                }}
+              >
+                <span style={{ fontSize: 16, lineHeight: 1 }}>+</span> Submit your shot string
+              </a>
+              <span style={{ color: "#5e7170", fontSize: 13 }}>
+                Got chrono data? Add your rifle to the database.
+              </span>
+            </div>
           </div>
 
           {guns.length > 0 && (
