@@ -41,7 +41,15 @@ function chartOptions(yTitle) {
         titleFont: { family: MONO, size: 13 },
         bodyFont: { family: MONO, size: 13 },
         usePointStyle: true,
-        callbacks: { title: (items) => "SHOT " + (items[0] ? items[0].label : "") },
+        callbacks: {
+          title: (items) => "SHOT " + (items[0] ? items[0].label : ""),
+          label: (item) => {
+            const base =
+              (item.dataset.label || "") + ": " + item.formattedValue;
+            const st = item.dataset.pointStatus?.[item.dataIndex];
+            return st === "estimated" ? base + "  · estimated (no read)" : base;
+          },
+        },
       },
     },
     scales: {
@@ -118,18 +126,25 @@ export default function Embed() {
     const getArr = (g) => (metric === "vel" ? g.vels : metric === "fpe" ? g.fpe : g.devs);
     const datasets = selGuns.map((g) => {
       const ys = getArr(g);
+      const pad = maxShots - ys.length;
       const data = ys
         .map((v) => (v == null ? null : Math.round(v * 10) / 10))
-        .concat(new Array(maxShots - ys.length).fill(null));
+        .concat(new Array(pad).fill(null));
+      const status = (g.pointStatus || []).concat(new Array(pad).fill(null));
+      const isEst = (i) => status[i] === "estimated";
       return {
         label: g.brand + " " + g.model + (g.variantName ? " · " + g.variantName : ""),
         data,
+        pointStatus: status,
         borderColor: g.color,
         backgroundColor: g.color,
         pointBackgroundColor: g.color,
         pointHoverBackgroundColor: g.color,
+        pointBorderColor: g.color,
+        pointStyle: data.map((_, i) => (isEst(i) ? "crossRot" : "circle")),
+        pointRadius: data.map((_, i) => (isEst(i) ? 4 : 0)),
+        pointBorderWidth: data.map((_, i) => (isEst(i) ? 2 : 1)),
         borderWidth: 2,
-        pointRadius: 0,
         pointHoverRadius: 5,
         tension: 0,
         spanGaps: false,

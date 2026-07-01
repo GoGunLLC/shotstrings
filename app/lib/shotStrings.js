@@ -56,6 +56,16 @@ function mapRow(row, index) {
   // Chart series use the effective (interpolated) curve so it stays continuous.
   const eff = effectiveVelocities(shots);
   const vels = eff.map((v) => (v == null ? null : Math.round(v)));
+  // Per-shot provenance, parallel to vels/fpe/devs: "measured" (real read),
+  // "estimated" (interior misread we interpolated), or "gap" (endpoint misread
+  // with no neighbor to interpolate from — left unplotted, not zeroed).
+  const pointStatus = shots.map((s, i) =>
+    s.velocity_status === "measured" && s.velocity_fps != null
+      ? "measured"
+      : eff[i] == null
+      ? "gap"
+      : "estimated"
+  );
   const fpe = eff.map((v) => (v == null ? null : (v * v * grains) / 450240));
   const devs = eff.map((v) => (v == null ? null : Math.round(v - mv)));
   const fpeVals = fpe.filter((x) => x != null);
@@ -87,6 +97,7 @@ function mapRow(row, index) {
     vels,
     fpe,
     devs,
+    pointStatus,
     mv,
     sd: sd.toFixed(1),
     es: es.toFixed(1),
