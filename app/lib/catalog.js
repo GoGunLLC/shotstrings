@@ -69,19 +69,22 @@ export function parseYouTubeId(url) {
   return null;
 }
 
-// Best-effort title lookup via YouTube oEmbed (CORS-friendly, no key needed).
-async function fetchVideoTitle(youtubeUrl) {
+// Best-effort metadata lookup via YouTube oEmbed (CORS-friendly, no key needed).
+// oEmbed returns the video `title` plus `author_name` (the channel name shown
+// on the "Watch at {channel}" card label) — we cache both at submission so the
+// feed never has to hit YouTube at render time.
+async function fetchVideoMeta(youtubeUrl) {
   try {
     const res = await fetch(
       `https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(
         youtubeUrl
       )}`
     );
-    if (!res.ok) return null;
+    if (!res.ok) return { title: null, channelTitle: null };
     const data = await res.json();
-    return data.title || null;
+    return { title: data.title || null, channelTitle: data.author_name || null };
   } catch {
-    return null;
+    return { title: null, channelTitle: null };
   }
 }
 
@@ -167,7 +170,7 @@ export async function submitShotString(form) {
   if (existing.data) {
     video = existing.data;
   } else {
-    const title = await fetchVideoTitle(form.youtubeUrl);
+    const { title, channelTitle } = await fetchVideoMeta(form.youtubeUrl);
     const ins = await supabase
       .from("videos")
       .insert({
@@ -175,6 +178,7 @@ export async function submitShotString(form) {
         youtube_url: form.youtubeUrl,
         youtube_video_id: videoId,
         title,
+        channel_title: channelTitle,
       })
       .select("id")
       .single();

@@ -121,6 +121,7 @@ function mapRow(row, index) {
             vid.thumbnail_url ??
             (ytId ? `https://i.ytimg.com/vi/${ytId}/mqdefault.jpg` : null),
           title: vid.title ?? null,
+          channelTitle: vid.channel_title ?? null,
         }
       : null,
   };
@@ -144,7 +145,7 @@ export async function getShotStrings() {
        ),
        projectile:projectiles ( name, type ),
        moderator:moderators ( name ),
-       video:videos ( youtube_url, youtube_video_id, thumbnail_url, title ),
+       video:videos ( youtube_url, youtube_video_id, thumbnail_url, title, channel_title ),
        shots ( shot_number, velocity_fps, velocity_status ),
        pressures:shot_string_tank_pressures ( start_pressure_psi, end_pressure_psi )`
     )

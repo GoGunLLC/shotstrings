@@ -1733,7 +1733,7 @@ function FeedCard({ g, selected, onToggle }) {
               onClick={(e) => e.stopPropagation()}
               style={{ color: TEAL, textDecoration: "none", fontWeight: 700, letterSpacing: 1 }}
             >
-              WATCH PROOF ↗
+              {g.video.channelTitle ? `WATCH AT ${g.video.channelTitle.toUpperCase()} ↗` : "WATCH PROOF ↗"}
             </a>
           ) : (
             <span style={{ color: AMBER, fontWeight: 700, letterSpacing: 1 }}>
