@@ -860,7 +860,7 @@ export default function Home() {
         <div
           style={{
             display: isMobile ? "block" : "grid",
-            gridTemplateColumns: isMobile ? undefined : "minmax(300px, 360px) 1fr",
+            gridTemplateColumns: isMobile ? undefined : "minmax(340px, 420px) 1fr",
             alignItems: "start",
           }}
         >
@@ -1340,7 +1340,7 @@ function Browse({ results, total, options, filters, setFilters, selected, onTogg
     <div
       style={{
         marginTop: rail ? 16 : 30,
-        maxWidth: rail ? "none" : 1100,
+        maxWidth: rail ? "none" : 1200,
         marginLeft: rail ? 0 : "auto",
         marginRight: rail ? 0 : "auto",
       }}
@@ -1465,7 +1465,7 @@ function Browse({ results, total, options, filters, setFilters, selected, onTogg
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: rail ? "1fr" : "repeat(auto-fill, minmax(270px, 1fr))",
+            gridTemplateColumns: rail ? "1fr" : "repeat(auto-fill, minmax(300px, 1fr))",
             gap: 14,
           }}
         >
@@ -1724,7 +1724,10 @@ function FeedCard({ g, selected, onToggle }) {
             color: "#5f656e",
           }}
         >
-          <span>{timeAgo(g.createdAt)}</span>
+          <span>
+            {timeAgo(g.createdAt)}
+            {g.submitter ? ` · by ${g.submitter}` : ""}
+          </span>
           {isVerifiedProof(g.video) ? (
             <a
               href={g.video.url}
