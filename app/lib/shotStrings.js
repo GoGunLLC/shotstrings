@@ -108,6 +108,7 @@ function mapRow(row, index) {
     estimatedCount: shots.length - measured.length,
     price: "—",
     // Feed / submission metadata
+    submitter: row.submitter?.username ?? null,
     createdAt: row.created_at ?? null,
     suppressor: row.moderator?.name ?? null,
     regulated: !!row.ran_regulated,
@@ -145,6 +146,7 @@ export async function getShotStrings() {
        ),
        projectile:projectiles ( name, type ),
        moderator:moderators ( name ),
+       submitter:profiles!shot_strings_submitted_by_fkey ( username ),
        video:videos ( youtube_url, youtube_video_id, thumbnail_url, title, channel_title ),
        shots ( shot_number, velocity_fps, velocity_status ),
        pressures:shot_string_tank_pressures ( start_pressure_psi, end_pressure_psi )`

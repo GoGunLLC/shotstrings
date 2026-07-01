@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import SiteNav, { GoogleMark } from "../components/SiteNav";
 import { getSupabaseClient } from "../lib/supabase";
-import { getMyDashboard } from "../lib/catalog";
+import { getMyDashboard, getMyProfile, setMyUsername } from "../lib/catalog";
 
 const TEAL = "#2fb8a0";
 
@@ -17,6 +17,7 @@ const STATUS_STYLE = {
 export default function DashboardPage() {
   const [session, setSession] = useState(undefined);
   const [data, setData] = useState(null);
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -26,7 +27,10 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => {
-    if (session) getMyDashboard(session.user.id).then(setData);
+    if (session) {
+      getMyDashboard(session.user.id).then(setData);
+      getMyProfile().then(setProfile);
+    }
   }, [session]);
 
   if (session === undefined) {
@@ -119,6 +123,12 @@ export default function DashboardPage() {
             + Submit a string
           </Link>
         </div>
+
+        {/* Handle editor */}
+        <HandleEditor
+          profile={profile}
+          onSaved={(username) => setProfile((p) => ({ ...(p || {}), username }))}
+        />
 
         {/* Stat row */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 34 }}>
@@ -249,6 +259,114 @@ export default function DashboardPage() {
             </div>
           ))}
       </div>
+    </div>
+  );
+}
+
+// Handle editor — the name shown next to every submission ("by {handle}").
+// Seeded from the account's auto-generated handle; the DB enforces format +
+// uniqueness, so we just surface whatever message it returns.
+function HandleEditor({ profile, onSaved }) {
+  const [value, setValue] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState(null); // { kind: "ok" | "err", text }
+
+  // Seed the input once the profile loads.
+  useEffect(() => {
+    if (profile && profile.username != null) setValue(profile.username);
+  }, [profile?.username]);
+
+  if (!profile) return null;
+
+  const current = profile.username || "";
+  const clean = value.trim();
+  const dirty = clean.toLowerCase() !== current.toLowerCase();
+
+  async function save() {
+    setBusy(true);
+    setMsg(null);
+    const res = await setMyUsername(clean);
+    setBusy(false);
+    if (res.error) {
+      setMsg({ kind: "err", text: res.error });
+      return;
+    }
+    setValue(res.username);
+    setMsg({ kind: "ok", text: "Handle saved." });
+    onSaved?.(res.username);
+  }
+
+  return (
+    <div
+      style={{
+        background: "#0e1013",
+        border: "1px solid #181b1f",
+        borderRadius: 8,
+        padding: "18px 20px",
+        marginBottom: 34,
+      }}
+    >
+      <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase" }}>
+        Your handle
+      </div>
+      <p style={{ color: "#868d96", fontSize: 13, lineHeight: 1.55, margin: "6px 0 12px" }}>
+        Shown next to every shot string you submit. Letters, numbers, and hyphens; must be unique.
+      </p>
+      <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <span className="mono" style={{ color: "#5e7170", fontSize: 15 }}>@</span>
+        <input
+          value={value}
+          onChange={(e) => {
+            setValue(e.target.value);
+            setMsg(null);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && dirty && clean && !busy) save();
+          }}
+          placeholder="your-handle"
+          className="mono"
+          style={{
+            background: "#0b0d10",
+            border: "1px solid #23272d",
+            borderRadius: 4,
+            color: "#e6e7e9",
+            fontSize: 14,
+            padding: "9px 11px",
+            outline: "none",
+            width: 240,
+            fontFamily: "inherit",
+          }}
+        />
+        <button
+          onClick={save}
+          disabled={busy || !dirty || !clean}
+          style={{
+            background: dirty && clean ? TEAL : "#1a1d21",
+            color: dirty && clean ? "#06100e" : "#5e7170",
+            border: "none",
+            borderRadius: 4,
+            padding: "9px 16px",
+            fontSize: 14,
+            fontWeight: 800,
+            cursor: busy || !dirty || !clean ? "default" : "pointer",
+            fontFamily: "inherit",
+          }}
+        >
+          {busy ? "Saving…" : "Save"}
+        </button>
+      </div>
+      {msg && (
+        <div
+          className="mono"
+          style={{
+            marginTop: 10,
+            fontSize: 12.5,
+            color: msg.kind === "ok" ? TEAL : "#e24b4a",
+          }}
+        >
+          {msg.text}
+        </div>
+      )}
     </div>
   );
 }

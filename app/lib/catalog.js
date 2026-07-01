@@ -324,6 +324,17 @@ export async function getMyProfile() {
   return data || { id: user.id, username: null, is_admin: false };
 }
 
+// Set the signed-in user's public handle. Validation, slug normalization, and
+// the "already taken" check all live in the set_my_username() DB function so the
+// rule is enforced in one place (and atomically). Returns { username } on
+// success or { error } with a human-readable message.
+export async function setMyUsername(newName) {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc("set_my_username", { p_new: newName });
+  if (error) return { error: error.message };
+  return { username: data };
+}
+
 // Full submission rows for the admin review queue. `filter` is a status or
 // "all". RLS already restricts this to admins (is_admin() in the SELECT policy),
 // but we surface a clear error if a non-admin somehow calls it.
