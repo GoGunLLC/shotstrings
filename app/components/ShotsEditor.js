@@ -50,6 +50,7 @@ export default function ShotsEditor({ shots, onChange, simpleStatus = false }) {
   const [drafts, setDrafts] = useState({});
   const statuses = simpleStatus ? SIMPLE_STATUSES : STATUSES;
   const unitLabel = unit === "mps" ? "m/s" : "fps";
+  const missLabel = simpleStatus ? "No read" : "Misread"; // label submitters use for an unread shot
 
   // entered value (in the chosen unit) -> stored fps
   const toFps = (n) => (unit === "mps" ? round1(fpsFromMps(n)) : n);
@@ -110,6 +111,44 @@ export default function ShotsEditor({ shots, onChange, simpleStatus = false }) {
 
   return (
     <div>
+      {/* Guidance — the #1 thing first-time submitters miss: unread/misread
+          shots still belong in the string so the estimates & efficiency math
+          stay accurate. */}
+      <div
+        style={{
+          display: "flex",
+          gap: 10,
+          background: "rgba(47,184,160,0.06)",
+          border: "1px solid rgba(47,184,160,0.35)",
+          borderRadius: 6,
+          padding: "10px 12px",
+          marginBottom: 14,
+          fontSize: 12.5,
+          lineHeight: 1.55,
+          color: "#b9c2c2",
+        }}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          style={{ flexShrink: 0, marginTop: 1, fill: "none", stroke: TEAL, strokeWidth: 2 }}
+        >
+          <circle cx="12" cy="12" r="9" />
+          <path d="M12 11v5" />
+          <path d="M12 7.5h.01" />
+        </svg>
+        <span>
+          <strong style={{ color: "#e6e7e9" }}>
+            Include every shot — even the ones your chrono missed or misread.
+          </strong>{" "}
+          Enter velocities in the order you fired them. For any shot with no good read, keep its
+          place and mark it <strong style={{ color: TEAL }}>{missLabel}</strong> (or type{" "}
+          <span className="mono">x</span> when pasting) — we estimate that shot for you. Leaving
+          misread shots out throws off the shot count and the energy-efficiency numbers.
+        </span>
+      </div>
+
       {/* Bulk paste */}
       <div style={{ marginBottom: 14 }}>
         <textarea
@@ -195,6 +234,7 @@ export default function ShotsEditor({ shots, onChange, simpleStatus = false }) {
                 <select
                   value={s.status}
                   onChange={(e) => setStatus(i, e.target.value)}
+                  title={`Set to "${missLabel}" for a shot the chrono didn't read — we'll estimate its velocity so your string stays accurate.`}
                   style={{ ...fieldBase, width: "100%", padding: "6px 9px", cursor: "pointer" }}
                 >
                   {statuses.map((st) => (
