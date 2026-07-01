@@ -307,7 +307,8 @@ export async function getAllSubmissions(filter = "pending") {
        projectile:projectiles ( name ),
        submitter:profiles!shot_strings_submitted_by_fkey ( username ),
        video:videos ( id, youtube_url, title ),
-       shots ( id, shot_number, velocity_fps, velocity_status )`
+       shots ( id, shot_number, velocity_fps, velocity_status ),
+       tank_pressures:shot_string_tank_pressures ( tank_id, start_pressure_psi, end_pressure_psi )`
     )
     .order("created_at", { ascending: false });
 
@@ -345,6 +346,17 @@ export async function getAllSubmissions(filter = "pending") {
         velocity: sh.velocity_fps == null ? null : Number(sh.velocity_fps),
         status: sh.velocity_status,
       })),
+    // Canonical psi start/end keyed by tank_id — the edit form seeds its inputs
+    // from this (missing tanks simply have no entry).
+    tankPressures: Object.fromEntries(
+      (s.tank_pressures || []).map((tp) => [
+        tp.tank_id,
+        {
+          start: tp.start_pressure_psi == null ? null : Number(tp.start_pressure_psi),
+          end: tp.end_pressure_psi == null ? null : Number(tp.end_pressure_psi),
+        },
+      ])
+    ),
   }));
   return { rows };
 }
@@ -362,8 +374,12 @@ export async function deleteString(id) {
   return { error: error?.message };
 }
 
-// Update a submission's editable fields and replace its shots wholesale.
-export async function updateStringFull(id, fields, shots) {
+// Update a submission's editable fields and replace its shots wholesale. When
+// `tankPressures` is provided (array of { tankId, startPsi, endPsi } in psi), the
+// string's per-tank pressure rows are replaced too — same delete-then-insert
+// approach as shots. Tanks left blank (no start pressure) get no row, mirroring
+// the submit form.
+export async function updateStringFull(id, fields, shots, tankPressures) {
   const supabase = getSupabaseClient();
 
   const upd = await supabase
@@ -395,6 +411,23 @@ export async function updateStringFull(id, fields, shots) {
     if (rows.length) {
       const ins = await supabase.from("shots").insert(rows);
       if (ins.error) return { error: `Fields saved, but re-inserting shots failed: ${ins.error.message}` };
+    }
+  }
+
+  if (Array.isArray(tankPressures)) {
+    const delP = await supabase.from("shot_string_tank_pressures").delete().eq("shot_string_id", id);
+    if (delP.error) return { error: `Fields saved, but clearing tank pressures failed: ${delP.error.message}` };
+    const pRows = tankPressures
+      .filter((p) => p.startPsi != null && p.startPsi !== "")
+      .map((p) => ({
+        shot_string_id: id,
+        tank_id: p.tankId,
+        start_pressure_psi: p.startPsi,
+        end_pressure_psi: p.endPsi ?? null,
+      }));
+    if (pRows.length) {
+      const insP = await supabase.from("shot_string_tank_pressures").insert(pRows);
+      if (insP.error) return { error: `Fields saved, but re-inserting tank pressures failed: ${insP.error.message}` };
     }
   }
   return {};
@@ -457,6 +490,62 @@ export async function addVariant({ modelId, caliberId, name, barrelLengthIn, reg
     if (t.error) return { data: res.data, error: `Variant saved, tank failed: ${t.error.message}` };
   }
   return res;
+}
+
+// Air tanks (admin-only, no status column — same as the tank insert in
+// addVariant). A variant owns one or more; these back the Manage tab's variant
+// panel. `patch` is keyed by DB column with string/empty values from the UI and
+// coerced to numbers/null here.
+function tankColumns(patch) {
+  const out = {};
+  if ("role" in patch) out.role = patch.role || "reservoir";
+  if ("position" in patch)
+    out.position = patch.position === "" || patch.position == null ? null : Number(patch.position);
+  if ("volume_cc" in patch)
+    out.volume_cc = patch.volume_cc === "" || patch.volume_cc == null ? null : Number(patch.volume_cc);
+  if ("rated_pressure_psi" in patch)
+    out.rated_pressure_psi =
+      patch.rated_pressure_psi === "" || patch.rated_pressure_psi == null ? null : Number(patch.rated_pressure_psi);
+  return out;
+}
+
+export async function addVariantTank(variantId, patch = {}) {
+  const supabase = getSupabaseClient();
+  const cols = tankColumns(patch);
+  const { data, error } = await supabase
+    .from("airgun_tanks")
+    .insert({
+      variant_id: variantId,
+      role: cols.role || "reservoir",
+      position: cols.position ?? 1,
+      volume_cc: cols.volume_cc ?? null,
+      rated_pressure_psi: cols.rated_pressure_psi ?? null,
+    })
+    .select("id, variant_id, role, position, volume_cc, rated_pressure_psi")
+    .single();
+  if (error) return { error: error.message };
+  return { data };
+}
+
+export async function updateVariantTank(tankId, patch) {
+  const supabase = getSupabaseClient();
+  const cols = tankColumns(patch);
+  if (Object.keys(cols).length === 0) return { error: "Nothing to update." };
+  const { error } = await supabase.from("airgun_tanks").update(cols).eq("id", tankId);
+  if (error) return { error: error.message };
+  return {};
+}
+
+export async function deleteVariantTank(tankId) {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.from("airgun_tanks").delete().eq("id", tankId);
+  if (error) {
+    // 23503 = foreign_key_violation: shot_string_tank_pressures still points here.
+    if (error.code === "23503")
+      return { error: "This tank has recorded shot-string pressures — remove those first." };
+    return { error: error.message };
+  }
+  return {};
 }
 
 export function addModerator({ brandId, name }) {
@@ -545,7 +634,7 @@ export async function getManageData() {
         .order("name"),
       supabase.from("moderators").select("id, name, brand_id, status").order("name"),
       supabase.from("calibers").select("id, name, nominal_inches, nominal_mm").order("name"),
-      supabase.from("airgun_tanks").select("id, variant_id"),
+      supabase.from("airgun_tanks").select("id, variant_id, role, position, volume_cc, rated_pressure_psi"),
       supabase
         .from("shot_strings")
         .select("id, airgun_variant_id, projectile_id, moderator_id, caliber_id"),
@@ -573,6 +662,18 @@ export async function getManageData() {
   const variantsByCaliber = tally(V, "caliber_id");
   const projByCaliber = tally(P, "caliber_id");
   const tanksByVariant = tally(T, "variant_id");
+
+  // Full tank rows per variant, ordered by position (1 = highest pressure), so
+  // the Manage tab's variant panel can edit each tank's volume/role/pressure.
+  const tankListByVariant = new Map();
+  for (const t of T) {
+    const arr = tankListByVariant.get(t.variant_id) || [];
+    arr.push(t);
+    tankListByVariant.set(t.variant_id, arr);
+  }
+  for (const arr of tankListByVariant.values()) {
+    arr.sort((a, b) => (a.position ?? 0) - (b.position ?? 0) || a.id - b.id);
+  }
   const ssByVariant = tally(S, "airgun_variant_id");
   const ssByProjectile = tally(S, "projectile_id");
   const ssByModerator = tally(S, "moderator_id");
@@ -643,6 +744,7 @@ export async function getManageData() {
         v.barrel_length_in ? ` · ${v.barrel_length_in}"` : ""
       }${v.name ? ` · ${v.name}` : ""}`,
       sub: null,
+      tanks: tankListByVariant.get(v.id) || [],
       deps,
       shotStrings: n(ssByVariant, v.id),
       blocking: deps.tanks + deps.shotStrings > 0,

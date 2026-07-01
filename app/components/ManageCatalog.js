@@ -6,7 +6,13 @@ import {
   mergeCatalogRecord,
   deleteCatalogRecord,
   updateCatalogRecord,
+  addVariantTank,
+  updateVariantTank,
+  deleteVariantTank,
 } from "../lib/catalog";
+
+// Tank role enum (architecture §3) — single-tank guns use "reservoir".
+const TANK_ROLES = ["reservoir", "main", "working"];
 
 // Editable fields per record kind, rendered in the Edit panel. `key` is the DB
 // column; `type` drives the input. `ref` points at one of the catalog lists for
@@ -122,6 +128,14 @@ export default function ManageCatalog() {
   }
   useEffect(load, []);
 
+  // Refresh in place without the loading flash or collapsing the open row —
+  // used after tank edits so the variant panel stays put for more changes.
+  function reloadInPlace() {
+    getManageData().then((d) => {
+      if (!d.error) setData(d);
+    });
+  }
+
   const records = (data && data[entity]) || [];
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -211,6 +225,10 @@ export default function ManageCatalog() {
               setOpenId(null);
               load();
             }}
+            onDoneKeepOpen={(text) => {
+              setMsg({ ok: true, text });
+              reloadInPlace();
+            }}
             onError={(text) => setMsg({ ok: false, text })}
           />
         ))}
@@ -224,7 +242,7 @@ export default function ManageCatalog() {
   );
 }
 
-function RecordRow({ rec, siblings, lists, open, onToggle, onDone, onError }) {
+function RecordRow({ rec, siblings, lists, open, onToggle, onDone, onDoneKeepOpen, onError }) {
   const [mergeTarget, setMergeTarget] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -308,6 +326,11 @@ function RecordRow({ rec, siblings, lists, open, onToggle, onDone, onError }) {
           {/* edit */}
           {EDIT_SPECS[rec.kind] && (
             <EditPanel rec={rec} lists={lists} onDone={onDone} onError={onError} />
+          )}
+
+          {/* air tanks — a variant owns one or more (volume/role/pressure) */}
+          {rec.kind === "variant" && (
+            <TankEditor rec={rec} onDone={onDoneKeepOpen} onError={onError} />
           )}
 
           {/* impact preview */}
@@ -522,6 +545,173 @@ function EditPanel({ rec, lists, onDone, onError }) {
           The slug updates to match the name.
         </span>
       )}
+    </div>
+  );
+}
+
+// Shared teal action-button style (matches the Save/Merge buttons above).
+function tealBtn(disabled) {
+  return {
+    background: "transparent",
+    color: TEAL,
+    border: `1px solid ${TEAL}`,
+    borderRadius: 4,
+    padding: "6px 16px",
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 0.5,
+    cursor: disabled ? "default" : "pointer",
+    textTransform: "uppercase",
+    opacity: disabled ? 0.45 : 1,
+  };
+}
+
+const sectionLabel = {
+  display: "block",
+  fontSize: 11,
+  letterSpacing: 1,
+  color: "#7b8089",
+  textTransform: "uppercase",
+  marginBottom: 8,
+};
+
+const microLabel = {
+  display: "block",
+  fontSize: 10.5,
+  letterSpacing: 0.5,
+  color: "#5e7170",
+  textTransform: "uppercase",
+  marginBottom: 5,
+};
+
+// Air-tank editor for a variant. Tanks live in their own table (airgun_tanks),
+// one or more per variant, so they're edited here rather than through the
+// column-patch EditPanel. Each row saves/removes independently; every operation
+// reloads via onDone so counts and the impact preview stay in step.
+function TankEditor({ rec, onDone, onError }) {
+  const tanks = rec.tanks || [];
+  const [adding, setAdding] = useState(false);
+
+  async function addTank() {
+    setAdding(true);
+    const nextPos = tanks.reduce((m, t) => Math.max(m, t.position || 0), 0) + 1;
+    const { error } = await addVariantTank(rec.id, { role: "reservoir", position: nextPos });
+    setAdding(false);
+    if (error) return onError(`Couldn't add tank: ${error}`);
+    onDone("Added a tank.");
+  }
+
+  return (
+    <div style={{ marginBottom: 18 }}>
+      <label className="mono" style={sectionLabel}>
+        Air tanks
+      </label>
+      {tanks.length === 0 && (
+        <div style={{ fontSize: 12, color: "#5e7170", marginBottom: 12 }}>
+          No tank on record. Add one — a volume is needed for air-efficiency math.
+        </div>
+      )}
+      {tanks.map((t) => (
+        <TankRow key={t.id} tank={t} onDone={onDone} onError={onError} />
+      ))}
+      <button onClick={addTank} disabled={adding} className="mono" style={tealBtn(adding)}>
+        {adding ? "Adding…" : "Add tank"}
+      </button>
+    </div>
+  );
+}
+
+// One editable tank row. Values are held as strings and coerced on save by the
+// lib layer (tankColumns). Removal is blocked by the DB when shot-string
+// pressures still reference the tank; that error is surfaced via onError.
+function TankRow({ tank, onDone, onError }) {
+  const [vals, setVals] = useState({
+    volume_cc: tank.volume_cc == null ? "" : String(tank.volume_cc),
+    role: tank.role || "reservoir",
+    rated_pressure_psi: tank.rated_pressure_psi == null ? "" : String(tank.rated_pressure_psi),
+    position: tank.position == null ? "" : String(tank.position),
+  });
+  const [busy, setBusy] = useState(false);
+
+  function set(k, v) {
+    setVals((s) => ({ ...s, [k]: v }));
+  }
+
+  async function save() {
+    for (const [k, label] of [
+      ["volume_cc", "Volume"],
+      ["rated_pressure_psi", "Rated pressure"],
+      ["position", "Position"],
+    ]) {
+      if (vals[k] !== "" && !Number.isFinite(Number(vals[k]))) {
+        return onError(`${label} must be a number.`);
+      }
+    }
+    setBusy(true);
+    const { error } = await updateVariantTank(tank.id, vals);
+    setBusy(false);
+    if (error) return onError(`Save failed: ${error}`);
+    onDone("Saved tank.");
+  }
+
+  async function remove() {
+    if (!confirm("Remove this tank? This can't be undone.")) return;
+    setBusy(true);
+    const { error } = await deleteVariantTank(tank.id);
+    setBusy(false);
+    if (error) return onError(`Remove failed: ${error}`);
+    onDone("Removed tank.");
+  }
+
+  return (
+    <div style={{ border: "1px solid #181b1f", borderRadius: 6, padding: 12, marginBottom: 10 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 12, marginBottom: 12 }}>
+        <div>
+          <label className="mono" style={microLabel}>Volume (cc)</label>
+          <input type="number" step="any" value={vals.volume_cc} onChange={(e) => set("volume_cc", e.target.value)} style={field} />
+        </div>
+        <div>
+          <label className="mono" style={microLabel}>Role</label>
+          <select value={vals.role} onChange={(e) => set("role", e.target.value)} style={field}>
+            {TANK_ROLES.map((r) => (
+              <option key={r} value={r}>{r}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mono" style={microLabel}>Rated pressure (psi)</label>
+          <input type="number" step="any" value={vals.rated_pressure_psi} onChange={(e) => set("rated_pressure_psi", e.target.value)} style={field} />
+        </div>
+        <div>
+          <label className="mono" style={microLabel}>Position</label>
+          <input type="number" step="1" value={vals.position} onChange={(e) => set("position", e.target.value)} style={field} />
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: 10 }}>
+        <button onClick={save} disabled={busy} className="mono" style={tealBtn(busy)}>
+          {busy ? "Saving…" : "Save tank"}
+        </button>
+        <button
+          onClick={remove}
+          disabled={busy}
+          className="mono"
+          style={{
+            background: "transparent",
+            color: RED,
+            border: `1px solid ${RED}`,
+            borderRadius: 4,
+            padding: "6px 16px",
+            fontSize: 11,
+            fontWeight: 700,
+            letterSpacing: 0.5,
+            cursor: busy ? "default" : "pointer",
+            textTransform: "uppercase",
+            opacity: busy ? 0.45 : 1,
+          }}
+        >
+          Remove
+        </button>
+      </div>
     </div>
   );
 }

@@ -360,8 +360,21 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
   const [reg, setReg] = useState(!!row.ranRegulated);
   const [setpoint, setSetpoint] = useState(row.regSetpointPsi ?? "");
   const [shots, setShots] = useState(row.shots);
+  // Per-tank start/end fill pressure, keyed by tank_id. Values are canonical psi
+  // (UnitField speaks psi); seeded from the submission's stored pressures.
+  const [tankPress, setTankPress] = useState(() => {
+    const init = {};
+    for (const [tid, v] of Object.entries(row.tankPressures || {})) {
+      init[tid] = { start: v.start ?? "", end: v.end ?? "" };
+    }
+    return init;
+  });
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
+
+  function setTank(tankId, patch) {
+    setTankPress((prev) => ({ ...prev, [tankId]: { ...prev[tankId], ...patch } }));
+  }
 
   const models = useMemo(
     () => (catalog?.models || []).filter((m) => String(m.brand_id) === String(brandId)),
@@ -373,6 +386,10 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
   );
   const variant = useMemo(() => variantsAll.find((v) => String(v.id) === String(variantId)) || null, [variantsAll, variantId]);
   const caliberId = variant?.caliber_id ?? row.caliberId;
+  const tanks = useMemo(
+    () => (variant?.tanks || []).slice().sort((a, b) => (a.position ?? 0) - (b.position ?? 0)),
+    [variant]
+  );
   const projectiles = useMemo(
     () => (catalog?.projectiles || []).filter((p) => caliberId == null || String(p.caliber_id) === String(caliberId)),
     [catalog, caliberId]
@@ -386,6 +403,13 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
     if (!weight || weight <= 0) return setErr("Projectile weight is required.");
     const bad = shots.some((s) => s.status === "measured" && (s.velocity == null || !Number.isFinite(s.velocity)));
     if (bad) return setErr("Measured shots need a velocity.");
+
+    // UnitField already stores canonical psi, so values pass through directly.
+    const tankPressures = tanks.map((t) => ({
+      tankId: t.id,
+      startPsi: tankPress[t.id]?.start === "" || tankPress[t.id]?.start == null ? null : Number(tankPress[t.id].start),
+      endPsi: tankPress[t.id]?.end === "" || tankPress[t.id]?.end == null ? null : Number(tankPress[t.id].end),
+    }));
 
     setBusy(true);
     const { error } = await updateStringFull(
@@ -402,7 +426,8 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
         altitudeFt: alt === "" ? null : Number(alt),
         chronoDistanceIn: chrono === "" ? null : Number(chrono),
       },
-      shots
+      shots,
+      tankPressures
     );
     setBusy(false);
     if (error) return setErr(error);
@@ -481,6 +506,33 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
         </L>
         {reg && <L label="Reg setpoint"><UnitField value={setpoint} onChange={setSetpoint} units={PRESSURE_UNITS} /></L>}
       </Grid>
+
+      <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "8px 0 8px" }}>
+        Fill pressure
+      </div>
+      {!variantId ? (
+        <div className="mono" style={{ fontSize: 11, color: "#5e7170", marginBottom: 8 }}>SELECT A VARIANT TO SEE ITS TANK(S)</div>
+      ) : tanks.length === 0 ? (
+        <div className="mono" style={{ fontSize: 11, color: "#5e7170", marginBottom: 8 }}>NO TANK DATA IN CATALOG FOR THIS VARIANT</div>
+      ) : (
+        tanks.map((t) => (
+          <div key={t.id} style={{ marginBottom: 4 }}>
+            {tanks.length > 1 && (
+              <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "4px 0 6px" }}>
+                {t.role} tank{t.volume_cc ? ` · ${t.volume_cc} cc` : ""}
+              </div>
+            )}
+            <Grid>
+              <L label="Start pressure">
+                <UnitField value={tankPress[t.id]?.start ?? ""} onChange={(v) => setTank(t.id, { start: v })} units={PRESSURE_UNITS} />
+              </L>
+              <L label="End pressure">
+                <UnitField value={tankPress[t.id]?.end ?? ""} onChange={(v) => setTank(t.id, { end: v })} units={PRESSURE_UNITS} />
+              </L>
+            </Grid>
+          </div>
+        ))
+      )}
 
       <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "8px 0 8px" }}>
         Shots

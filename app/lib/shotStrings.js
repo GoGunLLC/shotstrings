@@ -89,7 +89,7 @@ function mapRow(row, index) {
     devs,
     mv,
     sd: sd.toFixed(1),
-    es,
+    es: es.toFixed(1),
     afpe: fpeVals.length ? mean(fpeVals).toFixed(1) : "0",
     projectile: row.projectile?.name ?? null,
     projType: row.projectile?.type ?? null,
