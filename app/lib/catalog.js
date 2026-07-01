@@ -16,6 +16,39 @@ export const fFromC = (c) => (Number(c) * 9) / 5 + 32; // °C -> °F
 export const mFromFt = (ft) => Number(ft) / 3.28084; //  ft -> m
 
 // ---------------------------------------------------------------------------
+// Tank roles. Physically there are only two things worth distinguishing: the
+// bottle you fill (reservoir) and, on a regulated gun, the lower-pressure tank
+// downstream of the regulator (working). The legacy "main" value was just the
+// single-tank naming for the high-pressure bottle, so it maps to reservoir.
+// Role is a display label only — it feeds no calculation (volume math in
+// shotStrings.js sums every tank's volume_cc regardless of role).
+// ---------------------------------------------------------------------------
+export const TANK_ROLE_LABELS = {
+  reservoir: "Reservoir (fill bottle)",
+  working: "Regulated tank (working pressure)",
+  main: "Reservoir (fill bottle)", // legacy value, shown as a reservoir
+};
+
+// Friendly label for a stored role value (falls back gracefully).
+export const tankRoleLabel = (role) =>
+  TANK_ROLE_LABELS[role] || TANK_ROLE_LABELS.reservoir;
+
+// Short label for inline display, e.g. `${tankRoleShort(role)} tank`.
+const TANK_ROLE_SHORT = { reservoir: "Reservoir", working: "Regulated", main: "Reservoir" };
+export const tankRoleShort = (role) => TANK_ROLE_SHORT[role] || "Reservoir";
+
+// Which roles a user may pick, given whether the gun is regulated. Unregulated
+// guns only have a reservoir; the regulated (working) tank is offered only when
+// the Regulated toggle is on.
+export const tankRoleOptions = (isRegulated) =>
+  isRegulated
+    ? [
+        { value: "reservoir", label: TANK_ROLE_LABELS.reservoir },
+        { value: "working", label: TANK_ROLE_LABELS.working },
+      ]
+    : [{ value: "reservoir", label: TANK_ROLE_LABELS.reservoir }];
+
+// ---------------------------------------------------------------------------
 // YouTube URL parsing — pull the 11-char video id out of any common URL shape.
 // ---------------------------------------------------------------------------
 export function parseYouTubeId(url) {
@@ -462,7 +495,7 @@ export function addModel({ brandId, name, powerPlant }) {
 
 // Variant insert, plus an optional tank in one go (tanks are admin-only, no
 // status column — inserted separately).
-export async function addVariant({ modelId, caliberId, name, barrelLengthIn, regPressurePsi, isRegulated, tank }) {
+export async function addVariant({ modelId, caliberId, name, barrelLengthIn, regPressurePsi, isRegulated, tank, tanks }) {
   const trimmedName = typeof name === "string" ? name.trim() : "";
   const res = await adminInsert(
     "airgun_variants",
@@ -478,16 +511,22 @@ export async function addVariant({ modelId, caliberId, name, barrelLengthIn, reg
   );
   if (res.error) return res;
 
-  if (tank && (tank.volumeCc || tank.ratedPressurePsi)) {
-    const supabase = getSupabaseClient();
-    const t = await supabase.from("airgun_tanks").insert({
+  // Accept either a single `tank` (legacy) or a `tanks` array. Only rows with a
+  // volume or rated pressure are worth saving; positions default in order.
+  const list = Array.isArray(tanks) ? tanks : tank ? [tank] : [];
+  const rows = list
+    .filter((t) => t && (t.volumeCc || t.ratedPressurePsi))
+    .map((t, i) => ({
       variant_id: res.data.id,
-      role: tank.role || "reservoir",
-      position: tank.position || 1,
-      volume_cc: tank.volumeCc ?? null,
-      rated_pressure_psi: tank.ratedPressurePsi ?? null,
-    });
-    if (t.error) return { data: res.data, error: `Variant saved, tank failed: ${t.error.message}` };
+      role: t.role || "reservoir",
+      position: t.position || i + 1,
+      volume_cc: t.volumeCc ?? null,
+      rated_pressure_psi: t.ratedPressurePsi ?? null,
+    }));
+  if (rows.length) {
+    const supabase = getSupabaseClient();
+    const t = await supabase.from("airgun_tanks").insert(rows);
+    if (t.error) return { data: res.data, error: `Variant saved, tank(s) failed: ${t.error.message}` };
   }
   return res;
 }

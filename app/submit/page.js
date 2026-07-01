@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import SiteNav, { GoogleMark } from "../components/SiteNav";
 import ShotsEditor from "../components/ShotsEditor";
+import Toggle from "../components/Toggle";
 import { getSupabaseClient } from "../lib/supabase";
 import {
   getCatalog,
@@ -13,6 +14,7 @@ import {
   toFt,
   psiFromBar,
   inFromCm,
+  tankRoleShort,
 } from "../lib/catalog";
 
 const TEAL = "#2fb8a0";
@@ -52,6 +54,7 @@ export default function SubmitPage() {
   const [regUnit, setRegUnit] = useState("psi");
   const [pressUnit, setPressUnit] = useState("psi");
   const [tankPress, setTankPress] = useState({}); // { [tankId]: {start, end} }
+  const [sharedPress, setSharedPress] = useState({ start: "", end: "" }); // unregulated: one pressure for all connected tanks
   const [shots, setShots] = useState([]);
 
   const [busy, setBusy] = useState(false);
@@ -101,6 +104,18 @@ export default function SubmitPage() {
     [variant]
   );
 
+  // An unregulated gun's tanks are pneumatically connected, so they all sit at
+  // one pressure — collect a single start/end instead of a pair per tank.
+  const collapsePressure = !!variant && !variant.is_regulated;
+
+  // Auto-select the variant when a model has only one — no reason to make the
+  // user pick from a list of one. (onModel already clears downstream state.)
+  useEffect(() => {
+    if (modelId && !variantId && variants.length === 1) {
+      setVariantId(String(variants[0].id));
+    }
+  }, [modelId, variantId, variants]);
+
   // Reset downstream selects when an upstream one changes.
   function onBrand(v) {
     setBrandId(v);
@@ -108,17 +123,20 @@ export default function SubmitPage() {
     setVariantId("");
     setProjChoice("");
     setTankPress({});
+    setSharedPress({ start: "", end: "" });
   }
   function onModel(v) {
     setModelId(v);
     setVariantId("");
     setProjChoice("");
     setTankPress({});
+    setSharedPress({ start: "", end: "" });
   }
   function onVariant(v) {
     setVariantId(v);
     setProjChoice("");
     setTankPress({});
+    setSharedPress({ start: "", end: "" });
   }
 
   function setTank(tankId, patch) {
@@ -292,10 +310,12 @@ export default function SubmitPage() {
       altitude === "" ? null : altUnit === "m" ? toFt(altitude) : Number(altitude);
     const toPsi = (v) => (v == null || v === "" ? null : pressUnit === "bar" ? psiFromBar(v) : Number(v));
 
+    // Unregulated guns share one pressure across every connected tank; regulated
+    // guns keep a separate start/end per tank.
     const tankPressures = tanks.map((t) => ({
       tankId: t.id,
-      startPsi: toPsi(tankPress[t.id]?.start),
-      endPsi: toPsi(tankPress[t.id]?.end),
+      startPsi: toPsi(collapsePressure ? sharedPress.start : tankPress[t.id]?.start),
+      endPsi: toPsi(collapsePressure ? sharedPress.end : tankPress[t.id]?.end),
     }));
 
     setBusy(true);
@@ -491,11 +511,13 @@ export default function SubmitPage() {
                 />
               </Field>
               <Field label="Regulated?">
-                <div style={{ display: "flex", gap: 10, alignItems: "center", height: 40 }}>
-                  <Toggle on={ranRegulated} onClick={() => setRanRegulated((v) => !v)} />
-                  <span style={{ fontSize: 13, color: "#868d96" }}>
-                    {ranRegulated ? "Ran regulated" : "Unregulated"}
-                  </span>
+                <div style={{ display: "flex", alignItems: "center", height: 40 }}>
+                  <Toggle
+                    on={ranRegulated}
+                    onClick={() => setRanRegulated((v) => !v)}
+                    onLabel="Ran regulated"
+                    offLabel="Unregulated"
+                  />
                 </div>
               </Field>
             </Row>
@@ -519,7 +541,9 @@ export default function SubmitPage() {
             title="Fill pressure"
             hint={
               tanks.length > 1
-                ? "This gun has multiple tanks — enter each (needed for air efficiency)"
+                ? collapsePressure
+                  ? "Tanks are connected — one start and end pressure for all of them"
+                  : "This gun has multiple tanks — enter each (needed for air efficiency)"
                 : "Start and end pressure across the string"
             }
           >
@@ -538,22 +562,25 @@ export default function SubmitPage() {
                 <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
                   <SmallToggle value={pressUnit} onChange={setPressUnit} options={["psi", "bar"]} />
                 </div>
-                {tanks.map((t) => (
-                  <div key={t.id} style={{ marginBottom: 12 }}>
+                {collapsePressure ? (
+                  <div style={{ marginBottom: 12 }}>
                     {tanks.length > 1 && (
                       <div
                         className="mono"
                         style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", marginBottom: 6, textTransform: "uppercase" }}
                       >
-                        {t.role} tank{t.volume_cc ? ` · ${t.volume_cc} cc` : ""}
+                        {tanks.length} connected tanks
+                        {tanks.some((t) => t.volume_cc)
+                          ? ` · ${tanks.map((t) => (t.volume_cc ? `${t.volume_cc} cc` : "—")).join(" + ")}`
+                          : ""}
                       </div>
                     )}
                     <Row>
                       <input
                         type="number"
                         inputMode="decimal"
-                        value={tankPress[t.id]?.start ?? ""}
-                        onChange={(e) => setTank(t.id, { start: e.target.value })}
+                        value={sharedPress.start}
+                        onChange={(e) => setSharedPress((p) => ({ ...p, start: e.target.value }))}
                         placeholder={`Start (${pressUnit})`}
                         className="mono"
                         style={fieldStyle}
@@ -561,15 +588,48 @@ export default function SubmitPage() {
                       <input
                         type="number"
                         inputMode="decimal"
-                        value={tankPress[t.id]?.end ?? ""}
-                        onChange={(e) => setTank(t.id, { end: e.target.value })}
+                        value={sharedPress.end}
+                        onChange={(e) => setSharedPress((p) => ({ ...p, end: e.target.value }))}
                         placeholder={`End (${pressUnit}) — optional`}
                         className="mono"
                         style={fieldStyle}
                       />
                     </Row>
                   </div>
-                ))}
+                ) : (
+                  tanks.map((t) => (
+                    <div key={t.id} style={{ marginBottom: 12 }}>
+                      {tanks.length > 1 && (
+                        <div
+                          className="mono"
+                          style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", marginBottom: 6, textTransform: "uppercase" }}
+                        >
+                          {tankRoleShort(t.role)} tank{t.volume_cc ? ` · ${t.volume_cc} cc` : ""}
+                        </div>
+                      )}
+                      <Row>
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={tankPress[t.id]?.start ?? ""}
+                          onChange={(e) => setTank(t.id, { start: e.target.value })}
+                          placeholder={`Start (${pressUnit})`}
+                          className="mono"
+                          style={fieldStyle}
+                        />
+                        <input
+                          type="number"
+                          inputMode="decimal"
+                          value={tankPress[t.id]?.end ?? ""}
+                          onChange={(e) => setTank(t.id, { end: e.target.value })}
+                          placeholder={`End (${pressUnit}) — optional`}
+                          className="mono"
+                          style={fieldStyle}
+                        />
+                      </Row>
+                    </div>
+                  ))
+                )}
               </>
             )}
           </Section>
@@ -710,38 +770,6 @@ function SmallToggle({ value, onChange, options }) {
         </button>
       ))}
     </div>
-  );
-}
-
-function Toggle({ on, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      style={{
-        width: 42,
-        height: 24,
-        borderRadius: 12,
-        border: "none",
-        background: on ? TEAL : "#23272d",
-        position: "relative",
-        cursor: "pointer",
-        padding: 0,
-      }}
-    >
-      <span
-        style={{
-          position: "absolute",
-          top: 3,
-          left: on ? 21 : 3,
-          width: 18,
-          height: 18,
-          borderRadius: "50%",
-          background: on ? "#06100e" : "#5e6066",
-          transition: "left .15s",
-        }}
-      />
-    </button>
   );
 }
 

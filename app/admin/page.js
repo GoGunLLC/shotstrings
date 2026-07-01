@@ -5,6 +5,7 @@ import Link from "next/link";
 import SiteNav from "../components/SiteNav";
 import ShotsEditor from "../components/ShotsEditor";
 import ManageCatalog from "../components/ManageCatalog";
+import Toggle from "../components/Toggle";
 import {
   getMyProfile,
   getCatalog,
@@ -18,6 +19,8 @@ import {
   addModerator,
   addProjectile,
   addCaliber,
+  tankRoleOptions,
+  tankRoleShort,
   psiFromBar,
   barFromPsi,
   inFromCm,
@@ -499,10 +502,14 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
       </Grid>
       <Grid>
         <L label="Regulated">
-          <label style={{ display: "flex", alignItems: "center", gap: 8, height: 38, color: "#cdd2d8", fontSize: 13 }}>
-            <input type="checkbox" checked={reg} onChange={(e) => setReg(e.target.checked)} />
-            ran regulated
-          </label>
+          <div style={{ display: "flex", alignItems: "center", height: 38 }}>
+            <Toggle
+              on={reg}
+              onClick={() => setReg((v) => !v)}
+              onLabel="Ran regulated"
+              offLabel="Unregulated"
+            />
+          </div>
         </L>
         {reg && <L label="Reg setpoint"><UnitField value={setpoint} onChange={setSetpoint} units={PRESSURE_UNITS} /></L>}
       </Grid>
@@ -519,7 +526,7 @@ function EditSubmission({ row, catalog, onCancel, onSaved }) {
           <div key={t.id} style={{ marginBottom: 4 }}>
             {tanks.length > 1 && (
               <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#7b8089", textTransform: "uppercase", margin: "4px 0 6px" }}>
-                {t.role} tank{t.volume_cc ? ` · ${t.volume_cc} cc` : ""}
+                {tankRoleShort(t.role)} tank{t.volume_cc ? ` · ${t.volume_cc} cc` : ""}
               </div>
             )}
             <Grid>
@@ -700,6 +707,8 @@ function ModelForm({ catalog, onChanged }) {
   );
 }
 
+const emptyTank = () => ({ vol: "", role: "reservoir", rated: "" });
+
 function VariantForm({ catalog, onChanged }) {
   const [brandId, setBrandId] = useState("");
   const [modelId, setModelId] = useState("");
@@ -708,11 +717,14 @@ function VariantForm({ catalog, onChanged }) {
   const [barrel, setBarrel] = useState("");
   const [reg, setReg] = useState(false);
   const [regPsi, setRegPsi] = useState("");
-  const [vol, setVol] = useState("");
-  const [role, setRole] = useState("reservoir");
-  const [rated, setRated] = useState("");
+  const [tanks, setTanks] = useState([emptyTank()]);
   const { busy, msg, run } = useAdder(addVariant);
   const models = catalog.models.filter((m) => String(m.brand_id) === String(brandId));
+
+  const setTank = (i, patch) => setTanks((ts) => ts.map((t, j) => (j === i ? { ...t, ...patch } : t)));
+  const addTankRow = () => setTanks((ts) => [...ts, emptyTank()]);
+  const removeTankRow = (i) => setTanks((ts) => (ts.length > 1 ? ts.filter((_, j) => j !== i) : ts));
+
   return (
     <Card title="Variant (caliber + barrel + bottle)">
       <form
@@ -727,9 +739,14 @@ function VariantForm({ catalog, onChanged }) {
                 barrelLengthIn: barrel === "" ? null : Number(barrel),
                 isRegulated: reg,
                 regPressurePsi: reg && regPsi !== "" ? Number(regPsi) : null,
-                tank: { volumeCc: vol === "" ? null : Number(vol), role, ratedPressurePsi: rated === "" ? null : Number(rated) },
+                tanks: tanks.map((t, i) => ({
+                  volumeCc: t.vol === "" ? null : Number(t.vol),
+                  role: t.role,
+                  ratedPressurePsi: t.rated === "" ? null : Number(t.rated),
+                  position: i + 1,
+                })),
               },
-              () => { setName(""); setBarrel(""); setReg(false); setRegPsi(""); setVol(""); setRated(""); }
+              () => { setName(""); setBarrel(""); setReg(false); setRegPsi(""); setTanks([emptyTank()]); }
             ).then(onChanged);
         }}
       >
@@ -757,28 +774,61 @@ function VariantForm({ catalog, onChanged }) {
           <L label="Name"><input value={name} onChange={(e) => setName(e.target.value)} placeholder='optional, e.g. "Sniper"' style={field} /></L>
           <L label="Barrel length"><UnitField value={barrel} onChange={setBarrel} units={DISTANCE_UNITS} placeholder="optional" /></L>
           <L label="Regulated">
-            <label style={{ display: "flex", alignItems: "center", gap: 8, height: 38, color: "#cdd2d8", fontSize: 13 }}>
-              <input
-                type="checkbox"
-                checked={reg}
-                onChange={(e) => { setReg(e.target.checked); if (!e.target.checked) setRegPsi(""); }}
-              /> regulated
-            </label>
+            <div style={{ display: "flex", alignItems: "center", height: 38 }}>
+              <Toggle
+                on={reg}
+                onClick={() => {
+                  const next = !reg;
+                  setReg(next);
+                  if (!next) {
+                    setRegPsi("");
+                    setTanks((ts) => ts.map((t) => (t.role === "working" ? { ...t, role: "reservoir" } : t)));
+                  }
+                }}
+                onLabel="Regulated"
+                offLabel="Unregulated"
+              />
+            </div>
           </L>
-          {reg && <L label="Reg pressure"><UnitField value={regPsi} onChange={setRegPsi} units={PRESSURE_UNITS} placeholder="optional" /></L>}
+          <L label="Reg pressure">
+            <div style={{ visibility: reg ? "visible" : "hidden" }}>
+              <UnitField value={regPsi} onChange={setRegPsi} units={PRESSURE_UNITS} placeholder="optional" />
+            </div>
+          </L>
         </Grid>
         <div className="mono" style={{ fontSize: 11, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase", margin: "4px 0 10px" }}>
-          Tank (volume needed for air-efficiency math)
+          Tanks (volume needed for air-efficiency math)
         </div>
-        <Grid>
-          <L label="Volume (cc)"><input type="number" value={vol} onChange={(e) => setVol(e.target.value)} placeholder="optional" style={field} /></L>
-          <L label="Role">
-            <select value={role} onChange={(e) => setRole(e.target.value)} style={field}>
-              {["reservoir", "main", "working"].map((x) => <option key={x} value={x}>{x}</option>)}
-            </select>
-          </L>
-          <L label="Rated pressure"><UnitField value={rated} onChange={setRated} units={PRESSURE_UNITS} placeholder="optional" /></L>
-        </Grid>
+        {tanks.map((t, i) => (
+          <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-end", marginBottom: 12 }}>
+            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+              <L label="Volume (cc)"><input type="number" value={t.vol} onChange={(e) => setTank(i, { vol: e.target.value })} placeholder="optional" style={field} /></L>
+              <L label="Role">
+                <select value={t.role} onChange={(e) => setTank(i, { role: e.target.value })} disabled={!reg} style={field}>
+                  {tankRoleOptions(reg).map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+                </select>
+              </L>
+              <L label="Rated pressure"><UnitField value={t.rated} onChange={(v) => setTank(i, { rated: v })} units={PRESSURE_UNITS} placeholder="optional" /></L>
+            </div>
+            <button
+              type="button"
+              onClick={() => removeTankRow(i)}
+              disabled={tanks.length === 1}
+              title={tanks.length === 1 ? "At least one tank" : "Remove tank"}
+              style={{ background: "none", border: "1px solid #2a2f36", borderRadius: 4, color: tanks.length === 1 ? "#3a3f46" : "#c98a8a", height: 38, padding: "0 12px", fontSize: 12, cursor: tanks.length === 1 ? "not-allowed" : "pointer", flexShrink: 0 }}
+            >
+              Remove
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          onClick={addTankRow}
+          className="mono"
+          style={{ background: "none", border: "1px dashed #2a2f36", borderRadius: 4, color: TEAL, padding: "8px 14px", fontSize: 12, cursor: "pointer", marginBottom: 6 }}
+        >
+          + Add tank
+        </button>
         <div style={{ marginTop: 6 }}><SaveBtn busy={busy} label="Add variant" /><Status msg={msg} /></div>
       </form>
     </Card>

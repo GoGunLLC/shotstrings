@@ -9,10 +9,10 @@ import {
   addVariantTank,
   updateVariantTank,
   deleteVariantTank,
+  tankRoleOptions,
+  tankRoleLabel,
 } from "../lib/catalog";
-
-// Tank role enum (architecture §3) — single-tank guns use "reservoir".
-const TANK_ROLES = ["reservoir", "main", "working"];
+import Toggle from "./Toggle";
 
 // Editable fields per record kind, rendered in the Edit panel. `key` is the DB
 // column; `type` drives the input. `ref` points at one of the catalog lists for
@@ -491,10 +491,14 @@ function EditPanel({ rec, lists, onDone, onError }) {
               {f.label}
             </label>
             {f.type === "bool" ? (
-              <label style={{ display: "flex", alignItems: "center", gap: 8, height: 38, color: "#cdd2d8", fontSize: 13 }}>
-                <input type="checkbox" checked={!!vals[f.key]} onChange={(e) => set(f.key, e.target.checked)} />
-                yes
-              </label>
+              <div style={{ display: "flex", alignItems: "center", height: 38 }}>
+                <Toggle
+                  on={!!vals[f.key]}
+                  onClick={() => set(f.key, !vals[f.key])}
+                  onLabel="Yes"
+                  offLabel="No"
+                />
+              </div>
             ) : f.type === "select" ? (
               <select value={vals[f.key]} onChange={(e) => set(f.key, e.target.value)} style={field}>
                 {f.options.map((o) => (
@@ -612,7 +616,7 @@ function TankEditor({ rec, onDone, onError }) {
         </div>
       )}
       {tanks.map((t) => (
-        <TankRow key={t.id} tank={t} onDone={onDone} onError={onError} />
+        <TankRow key={t.id} tank={t} isRegulated={!!rec.is_regulated} onDone={onDone} onError={onError} />
       ))}
       <button onClick={addTank} disabled={adding} className="mono" style={tealBtn(adding)}>
         {adding ? "Adding…" : "Add tank"}
@@ -624,7 +628,7 @@ function TankEditor({ rec, onDone, onError }) {
 // One editable tank row. Values are held as strings and coerced on save by the
 // lib layer (tankColumns). Removal is blocked by the DB when shot-string
 // pressures still reference the tank; that error is surfaced via onError.
-function TankRow({ tank, onDone, onError }) {
+function TankRow({ tank, isRegulated, onDone, onError }) {
   const [vals, setVals] = useState({
     volume_cc: tank.volume_cc == null ? "" : String(tank.volume_cc),
     role: tank.role || "reservoir",
@@ -673,8 +677,16 @@ function TankRow({ tank, onDone, onError }) {
         <div>
           <label className="mono" style={microLabel}>Role</label>
           <select value={vals.role} onChange={(e) => set("role", e.target.value)} style={field}>
-            {TANK_ROLES.map((r) => (
-              <option key={r} value={r}>{r}</option>
+            {(() => {
+              const opts = tankRoleOptions(isRegulated);
+              // Keep the current stored value selectable even if it's a legacy
+              // role (e.g. "main"/"working" on a now-unregulated variant) so
+              // editing other fields never silently changes it.
+              return opts.some((o) => o.value === vals.role)
+                ? opts
+                : [...opts, { value: vals.role, label: tankRoleLabel(vals.role) }];
+            })().map((o) => (
+              <option key={o.value} value={o.value}>{o.label}</option>
             ))}
           </select>
         </div>
