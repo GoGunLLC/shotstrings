@@ -12,6 +12,11 @@ const MONO = "'Space Mono', ui-monospace, monospace";
 const TEAL = "#2fb8a0";
 const AMBER = "#d6a23e";
 
+// Canonical stored units are fps (velocity) and ft-lb (energy). Display can be
+// toggled to metric — 1 ft = 0.3048 m exactly; 1 ft-lb = 1.35581794884 J.
+const MPS_PER_FPS = 0.3048;
+const J_PER_FTLB = 1.35581794884;
+
 // Measures the pixel width of `text` in the search input's font, so the custom
 // teal caret can be positioned exactly where the native one would sit.
 let _measureCtx = null;
@@ -107,6 +112,8 @@ export default function Home() {
   const [selected, setSelected] = useState([]); // ids queued for comparison
   const [showCompare, setShowCompare] = useState(false);
   const [metric, setMetric] = useState("vel");
+  const [velUnit, setVelUnit] = useState("fps"); // "fps" | "mps"
+  const [energyUnit, setEnergyUnit] = useState("ftlb"); // "ftlb" | "j"
   const [query, setQuery] = useState("");
   const [guns, setGuns] = useState([]);
   const [isMobile, setIsMobile] = useState(false);
@@ -173,6 +180,17 @@ export default function Home() {
     () => selected.map((id) => byId[id]).filter(Boolean),
     [selected, byId]
   );
+
+  // Unit-aware display helpers. Source values are canonical (fps / ft-lb); these
+  // convert + format for the currently selected display unit.
+  const velLabel = velUnit === "mps" ? "m/s" : "fps";
+  const energyLabel = energyUnit === "j" ? "J" : "ft-lb";
+  const convVel = (fps) => (velUnit === "mps" ? fps * MPS_PER_FPS : fps);
+  const convEnergy = (ftlb) => (energyUnit === "j" ? ftlb * J_PER_FTLB : ftlb);
+  const fmtMv = (g) => (velUnit === "mps" ? (g.mv * MPS_PER_FPS).toFixed(1) : String(g.mv));
+  const fmtSd = (g) => (velUnit === "mps" ? (Number(g.sd) * MPS_PER_FPS).toFixed(1) : g.sd);
+  const fmtEs = (g) => (velUnit === "mps" ? (Number(g.es) * MPS_PER_FPS).toFixed(1) : g.es);
+  const fmtAfpe = (g) => (energyUnit === "j" ? (Number(g.afpe) * J_PER_FTLB).toFixed(1) : g.afpe);
 
   function toggle(id) {
     setSelected((prev) =>
@@ -369,7 +387,12 @@ export default function Home() {
 
     const maxShots = selGuns.reduce((m, g) => Math.max(m, g.shots), 0);
     const labels = Array.from({ length: maxShots }, (_, i) => i + 1);
-    const getArr = (g) => (metric === "vel" ? g.vels : metric === "fpe" ? g.fpe : g.devs);
+    // Deviation and velocity both display in the velocity unit; energy in its own.
+    const conv = metric === "fpe" ? convEnergy : convVel;
+    const getArr = (g) => {
+      const raw = metric === "vel" ? g.vels : metric === "fpe" ? g.fpe : g.devs;
+      return raw.map((v) => (v == null ? null : conv(v)));
+    };
     const datasets = selGuns.map((g) => {
       const ys = getArr(g);
       const pad = maxShots - ys.length;
@@ -402,10 +425,10 @@ export default function Home() {
     });
     const yTitle =
       metric === "vel"
-        ? "Velocity (fps)"
+        ? `Velocity (${velLabel})`
         : metric === "fpe"
-        ? "Energy (ft-lb)"
-        : "Deviation from mean (fps)";
+        ? `Energy (${energyLabel})`
+        : `Deviation from mean (${velLabel})`;
 
     if (chartRef.current) {
       chartRef.current.data.labels = labels;
@@ -419,7 +442,7 @@ export default function Home() {
         options: chartOptions(yTitle),
       });
     }
-  }, [selGuns, metric, showCompare, isMobile]);
+  }, [selGuns, metric, showCompare, isMobile, velUnit, energyUnit]);
 
   useEffect(() => () => chartRef.current && chartRef.current.destroy(), []);
 
@@ -647,8 +670,8 @@ export default function Home() {
             </button>
           </div>
 
-          {/* metric toggle */}
-          <div style={{ display: "flex", justifyContent: "center", padding: "10px 0 4px", flex: "0 0 auto" }}>
+          {/* metric toggle + contextual unit toggle */}
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 8, flexWrap: "wrap", padding: "10px 0 4px", flex: "0 0 auto" }}>
             <div
               className="mono"
               style={{ display: "flex", border: "1px solid #23272d", borderRadius: 3, overflow: "hidden", fontSize: 12, letterSpacing: 1 }}
@@ -672,6 +695,11 @@ export default function Home() {
                 );
               })}
             </div>
+            {metric === "fpe" ? (
+              <UnitToggle options={[["ftlb", "FT·LB"], ["j", "J"]]} value={energyUnit} onChange={setEnergyUnit} />
+            ) : (
+              <UnitToggle options={[["fps", "FPS"], ["mps", "M/S"]]} value={velUnit} onChange={setVelUnit} />
+            )}
           </div>
 
           {/* chart — fills the space above the collapsed sheet. While the sheet
@@ -759,9 +787,9 @@ export default function Home() {
                     {g.brand} {g.model}
                   </span>
                   <span className="mono" style={{ fontSize: 12, color: "#e7ebef", marginLeft: "auto", flex: "0 0 auto" }}>
-                    {metric === "vel" ? g.mv : metric === "fpe" ? g.afpe : g.sd}
+                    {metric === "vel" ? fmtMv(g) : metric === "fpe" ? fmtAfpe(g) : fmtSd(g)}
                     <span style={{ fontSize: 10, color: "#5e7170", marginLeft: 2 }}>
-                      {metric === "vel" ? "fps" : metric === "fpe" ? "ft·lb" : "sd"}
+                      {metric === "vel" ? velLabel : metric === "fpe" ? energyLabel : "sd"}
                     </span>
                   </span>
                 </div>
@@ -792,9 +820,9 @@ export default function Home() {
                     </button>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 14px" }}>
-                    <Stat label="AVG VEL" value={g.mv} unit=" fps" />
-                    <Stat label="STD DEV" value={g.sd} unit=" fps" accent />
-                    <Stat label="EXT SPREAD" value={g.es} unit=" fps" />
+                    <Stat label="AVG VEL" value={fmtMv(g)} unit={" " + velLabel} />
+                    <Stat label="STD DEV" value={fmtSd(g)} unit={" " + velLabel} accent />
+                    <Stat label="EXT SPREAD" value={fmtEs(g)} unit={" " + velLabel} />
                     <Stat label="SHOTS/FILL" value={g.shots} unit="" />
                   </div>
                 </div>
@@ -906,6 +934,13 @@ export default function Home() {
                   })}
                 </div>
 
+                {/* unit toggle — velocity units for VEL/CONSISTENCY, energy for ENERGY */}
+                {metric === "fpe" ? (
+                  <UnitToggle options={[["ftlb", "FT·LB"], ["j", "J"]]} value={energyUnit} onChange={setEnergyUnit} />
+                ) : (
+                  <UnitToggle options={[["fps", "FPS"], ["mps", "M/S"]]} value={velUnit} onChange={setVelUnit} />
+                )}
+
                 {/* share — opens link / embed modal (YouTube-style) */}
                 <button
                   onClick={() => setShowShare(true)}
@@ -1000,9 +1035,9 @@ export default function Home() {
                       </button>
                     </div>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 14px" }}>
-                      <Stat label="AVG VEL" value={g.mv} unit=" fps" />
-                      <Stat label="STD DEV" value={g.sd} unit=" fps" accent />
-                      <Stat label="EXT SPREAD" value={g.es} unit=" fps" />
+                      <Stat label="AVG VEL" value={fmtMv(g)} unit={" " + velLabel} />
+                      <Stat label="STD DEV" value={fmtSd(g)} unit={" " + velLabel} accent />
+                      <Stat label="EXT SPREAD" value={fmtEs(g)} unit={" " + velLabel} />
                       <Stat label="SHOTS/FILL" value={g.shots} unit="" />
                     </div>
                   </div>
@@ -2026,6 +2061,36 @@ function ShareModal({ graphQuery, embedQuery, count, onClose }) {
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Small segmented control mirroring the metric toggle's look, used to switch
+// display units (FPS/M·S and FT·LB/J) on the graph.
+function UnitToggle({ options, value, onChange }) {
+  return (
+    <div
+      className="mono"
+      style={{ display: "flex", border: "1px solid #23272d", borderRadius: 3, overflow: "hidden", fontSize: 12, letterSpacing: 1 }}
+    >
+      {options.map(([val, label]) => {
+        const on = value === val;
+        return (
+          <span
+            key={val}
+            onClick={() => onChange(val)}
+            style={{
+              padding: "7px 12px",
+              cursor: "pointer",
+              background: on ? "#182420" : "transparent",
+              color: on ? TEAL : "#7b8089",
+              fontWeight: on ? 700 : 400,
+            }}
+          >
+            {label}
+          </span>
+        );
+      })}
     </div>
   );
 }
