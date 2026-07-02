@@ -15,6 +15,12 @@ import {
   psiFromBar,
   inFromCm,
   tankRoleShort,
+  tankRoleOptions,
+  createBrand,
+  createModel,
+  createVariant,
+  createModerator,
+  createProjectile,
 } from "../lib/catalog";
 
 const TEAL = "#2fb8a0";
@@ -60,6 +66,10 @@ export default function SubmitPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [doneId, setDoneId] = useState(null);
+
+  // Which inline "create new…" mini-form is open (one at a time):
+  // null | "brand" | "model" | "variant" | "moderator" | "projectile"
+  const [creating, setCreating] = useState(null);
 
   useEffect(() => {
     const supabase = getSupabaseClient();
@@ -116,6 +126,13 @@ export default function SubmitPage() {
     }
   }, [modelId, variantId, variants]);
 
+  // Default the "Regulated?" switch to match the loaded gun — a regulated gun
+  // was almost certainly run regulated. Only re-fires when the selected variant
+  // changes, so the user is still free to flip it afterward.
+  useEffect(() => {
+    if (variant) setRanRegulated(!!variant.is_regulated);
+  }, [variant?.id]);
+
   // Reset downstream selects when an upstream one changes.
   function onBrand(v) {
     setBrandId(v);
@@ -142,6 +159,45 @@ export default function SubmitPage() {
   function setTank(tankId, patch) {
     setTankPress((prev) => ({ ...prev, [tankId]: { ...prev[tankId], ...patch } }));
   }
+
+  // After an inline create: reload the catalog so the new row shows up in the
+  // selects, then select it (walking the upstream resets where needed).
+  async function refreshCatalog() {
+    const c = await getCatalog();
+    setCatalog(c);
+    return c;
+  }
+  async function onCreatedBrand(b) {
+    await refreshCatalog();
+    onBrand(String(b.id));
+    setCreating(null);
+  }
+  async function onCreatedModel(m) {
+    await refreshCatalog();
+    onModel(String(m.id));
+    setCreating(null);
+  }
+  async function onCreatedVariant(v) {
+    await refreshCatalog();
+    onVariant(String(v.id));
+    setCreating(null);
+  }
+  async function onCreatedModerator(m) {
+    await refreshCatalog();
+    setModeratorId(String(m.id));
+    setCreating(null);
+  }
+  async function onCreatedProjectile(p) {
+    await refreshCatalog();
+    setProjChoice(String(p.id));
+    setCreating(null);
+  }
+
+  // Shared onChange for selects that carry a "+ Add new…" option.
+  const selectOrCreate = (kind, setter) => (e) => {
+    if (e.target.value === "__new") setCreating(kind);
+    else setter(e.target.value);
+  };
 
   // ---- Auth gate (matches the logged-out flow we designed) ----
   if (session === undefined) {
@@ -253,8 +309,8 @@ export default function SubmitPage() {
             </div>
             <h2 style={{ fontSize: 24, fontWeight: 800, letterSpacing: -0.6 }}>String submitted</h2>
             <p style={{ color: "#868d96", fontSize: 14, lineHeight: 1.6, margin: "12px 0 24px" }}>
-              Thanks — it's now <strong style={{ color: "#e0a93f" }}>pending review</strong>. Approved
-              strings appear publicly on the index. You can track its status on your dashboard.
+              Thanks — it's <strong style={{ color: TEAL }}>live now</strong>. Graph it, share it, or
+              grab an embed link right away. Admins double-check new submissions after the fact.
             </p>
             <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
               <Link href="/dashboard" style={primaryBtn}>
@@ -358,7 +414,8 @@ export default function SubmitPage() {
         </h1>
         <p style={{ color: "#868d96", fontSize: 14, lineHeight: 1.6, margin: "12px 0 0", maxWidth: 560 }}>
           Link the video, pick the gun and projectile, then enter the per-shot velocities. We compute
-          energy, spread and air efficiency from this. Submissions are reviewed before they appear.
+          energy, spread and air efficiency from this. Can't find the gun or pellet? Add it right
+          from the form. Submissions go live immediately.
         </p>
 
         <form onSubmit={handleSubmit} className="submit-form" style={{ marginTop: 34 }}>
@@ -376,22 +433,23 @@ export default function SubmitPage() {
           </Section>
 
           {/* 2. Gun */}
-          <Section n="02" title="The gun" hint="Choose from the catalog">
+          <Section n="02" title="The gun" hint="Can't find it? Add it — new entries are usable right away">
             <Row>
               <Field label="Brand" required>
-                <select value={brandId} onChange={(e) => onBrand(e.target.value)} style={fieldStyle}>
+                <select value={brandId} onChange={selectOrCreate("brand", onBrand)} style={fieldStyle}>
                   <option value="">Select brand…</option>
                   {(catalog?.brands || []).map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name}
                     </option>
                   ))}
+                  <option value="__new">+ Add new brand…</option>
                 </select>
               </Field>
               <Field label="Model" required>
                 <select
                   value={modelId}
-                  onChange={(e) => onModel(e.target.value)}
+                  onChange={selectOrCreate("model", onModel)}
                   disabled={!brandId}
                   style={fieldStyle}
                 >
@@ -401,9 +459,16 @@ export default function SubmitPage() {
                       {m.name}
                     </option>
                   ))}
+                  {brandId && <option value="__new">+ Add new model…</option>}
                 </select>
               </Field>
             </Row>
+            {creating === "brand" && (
+              <NewBrandForm onDone={onCreatedBrand} onCancel={() => setCreating(null)} />
+            )}
+            {creating === "model" && (
+              <NewModelForm brandId={brandId} onDone={onCreatedModel} onCancel={() => setCreating(null)} />
+            )}
             <Field
               label="Variant"
               required
@@ -411,7 +476,7 @@ export default function SubmitPage() {
             >
               <select
                 value={variantId}
-                onChange={(e) => onVariant(e.target.value)}
+                onChange={selectOrCreate("variant", onVariant)}
                 disabled={!modelId}
                 style={fieldStyle}
               >
@@ -423,18 +488,35 @@ export default function SubmitPage() {
                     {v.name ? ` · ${v.name}` : ""}
                   </option>
                 ))}
+                {modelId && <option value="__new">+ Add new variant…</option>}
               </select>
             </Field>
+            {creating === "variant" && (
+              <NewVariantForm
+                modelId={modelId}
+                calibers={catalog?.calibers || []}
+                onDone={onCreatedVariant}
+                onCancel={() => setCreating(null)}
+              />
+            )}
             <Field label="Suppressor / moderator" hint="Optional">
-              <select value={moderatorId} onChange={(e) => setModeratorId(e.target.value)} style={fieldStyle}>
+              <select value={moderatorId} onChange={selectOrCreate("moderator", setModeratorId)} style={fieldStyle}>
                 <option value="">None</option>
                 {(catalog?.moderators || []).map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.brand?.name ? `${m.brand.name} ${m.name}` : m.name}
                   </option>
                 ))}
+                <option value="__new">+ Add new suppressor…</option>
               </select>
             </Field>
+            {creating === "moderator" && (
+              <NewModeratorForm
+                brands={catalog?.brands || []}
+                onDone={onCreatedModerator}
+                onCancel={() => setCreating(null)}
+              />
+            )}
           </Section>
 
           {/* 3. Projectile */}
@@ -442,7 +524,7 @@ export default function SubmitPage() {
             <Field label="Pellet / slug" required>
               <select
                 value={projChoice}
-                onChange={(e) => setProjChoice(e.target.value)}
+                onChange={selectOrCreate("projectile", setProjChoice)}
                 disabled={!variantId}
                 style={fieldStyle}
               >
@@ -452,9 +534,19 @@ export default function SubmitPage() {
                     {p.brand?.name ? `${p.brand.name} ${p.name}` : p.name} · {p.weight_grains} gr ({p.type})
                   </option>
                 ))}
-                {variantId && <option value="custom">Custom / unlisted…</option>}
+                {variantId && <option value="__new">+ Add new pellet / slug…</option>}
+                {variantId && <option value="custom">Custom / one-off (weight only)…</option>}
               </select>
             </Field>
+            {creating === "projectile" && (
+              <NewProjectileForm
+                brands={catalog?.brands || []}
+                caliberId={caliberId}
+                caliberName={caliberName}
+                onDone={onCreatedProjectile}
+                onCancel={() => setCreating(null)}
+              />
+            )}
             {projChoice === "custom" && (
               <Field label="Projectile weight (grains)" required hint="We snapshot this onto the string so the energy math never drifts.">
                 <input
@@ -657,15 +749,364 @@ export default function SubmitPage() {
 
           <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
             <button type="submit" disabled={busy} style={{ ...primaryBtn, opacity: busy ? 0.6 : 1 }}>
-              {busy ? "Submitting…" : "Submit for review"}
+              {busy ? "Submitting…" : "Submit shot string"}
             </button>
             <span className="mono" style={{ fontSize: 12, color: "#5e7170", letterSpacing: 0.5 }}>
-              REVIEWED BEFORE GOING PUBLIC
+              GOES LIVE IMMEDIATELY
             </span>
           </div>
         </form>
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Inline "create new" mini-forms. Each creates a live catalog row (it lands in
+// the admin review queue behind the scenes) and hands the new record back so
+// the parent can select it.
+// ---------------------------------------------------------------------------
+function CreateBox({ title, children, onSave, onCancel, busy, err }) {
+  return (
+    <div
+      style={{
+        border: `1px dashed rgba(47,184,160,0.5)`,
+        background: "rgba(47,184,160,0.04)",
+        borderRadius: 6,
+        padding: "16px 16px 14px",
+        marginBottom: 16,
+      }}
+    >
+      <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: TEAL, textTransform: "uppercase", marginBottom: 12 }}>
+        {title}
+      </div>
+      {children}
+      {err && <div style={{ color: "#f0a0a0", fontSize: 13, marginBottom: 10 }}>{err}</div>}
+      <div style={{ display: "flex", gap: 10 }}>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={busy}
+          style={{ ...primaryBtn, padding: "9px 16px", fontSize: 13, opacity: busy ? 0.6 : 1 }}
+        >
+          {busy ? "Adding…" : "Add"}
+        </button>
+        <button type="button" onClick={onCancel} style={{ ...ghostBtn, padding: "9px 16px", fontSize: 13 }}>
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Hook: shared busy/error/save plumbing for the mini-forms.
+function useCreator(makeCall, onDone) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  async function save() {
+    setErr("");
+    const call = makeCall();
+    if (typeof call === "string") return setErr(call); // validation message
+    setBusy(true);
+    const res = await call();
+    setBusy(false);
+    if (res.error) return setErr(res.error);
+    await onDone(res.data);
+  }
+  return { busy, err, save };
+}
+
+function NewBrandForm({ onDone, onCancel }) {
+  const [name, setName] = useState("");
+  const { busy, err, save } = useCreator(
+    () => (name.trim() ? () => createBrand({ name: name.trim() }) : "Enter the brand name."),
+    onDone
+  );
+  return (
+    <CreateBox title="New brand" onSave={save} onCancel={onCancel} busy={busy} err={err}>
+      <Field label="Brand name" required>
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Skout Airguns" style={fieldStyle} autoFocus />
+      </Field>
+    </CreateBox>
+  );
+}
+
+function NewModelForm({ brandId, onDone, onCancel }) {
+  const [name, setName] = useState("");
+  const [pp, setPp] = useState("pcp");
+  const { busy, err, save } = useCreator(
+    () =>
+      name.trim()
+        ? () => createModel({ brandId: Number(brandId), name: name.trim(), powerPlant: pp })
+        : "Enter the model name.",
+    onDone
+  );
+  return (
+    <CreateBox title="New model" onSave={save} onCancel={onCancel} busy={busy} err={err}>
+      <Row>
+        <Field label="Model name" required>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Epoch" style={fieldStyle} autoFocus />
+        </Field>
+        <Field label="Power plant" required>
+          <select value={pp} onChange={(e) => setPp(e.target.value)} style={fieldStyle}>
+            {["pcp", "spring", "gas_ram", "co2", "multi_pump"].map((x) => (
+              <option key={x} value={x}>{x}</option>
+            ))}
+          </select>
+        </Field>
+      </Row>
+    </CreateBox>
+  );
+}
+
+const emptyTankRow = () => ({ vol: "", role: "reservoir", rated: "" });
+
+function NewVariantForm({ modelId, calibers, onDone, onCancel }) {
+  const [caliberId, setCaliberId] = useState("");
+  const [name, setName] = useState("");
+  const [barrel, setBarrel] = useState("");
+  const [barrelUnit, setBarrelUnit] = useState("in");
+  const [reg, setReg] = useState(true);
+  const [regPsi, setRegPsi] = useState("");
+  const [pressUnit, setPressUnit] = useState("psi");
+  const [tanks, setTanks] = useState([emptyTankRow()]);
+
+  const toPsi = (v) => (v === "" || v == null ? null : pressUnit === "bar" ? psiFromBar(v) : Number(v));
+  const setTankRow = (i, patch) => setTanks((ts) => ts.map((t, j) => (j === i ? { ...t, ...patch } : t)));
+
+  const { busy, err, save } = useCreator(
+    () =>
+      caliberId
+        ? () =>
+            createVariant({
+              modelId: Number(modelId),
+              caliberId: Number(caliberId),
+              name: name.trim() || null,
+              barrelLengthIn: barrel === "" ? null : barrelUnit === "cm" ? inFromCm(barrel) : Number(barrel),
+              isRegulated: reg,
+              regPressurePsi: reg ? toPsi(regPsi) : null,
+              tanks: tanks.map((t, i) => ({
+                volumeCc: t.vol === "" ? null : Number(t.vol),
+                role: t.role,
+                ratedPressurePsi: toPsi(t.rated),
+                position: i + 1,
+              })),
+            })
+        : "Pick the caliber.",
+    onDone
+  );
+
+  return (
+    <CreateBox title="New variant" onSave={save} onCancel={onCancel} busy={busy} err={err}>
+      <Row>
+        <Field label="Caliber" required>
+          <select value={caliberId} onChange={(e) => setCaliberId(e.target.value)} style={fieldStyle} autoFocus>
+            <option value="">Select caliber…</option>
+            {calibers.map((c) => (
+              <option key={c.id} value={c.id}>{c.name}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Edition name" hint="Optional — e.g. Sniper, Compact">
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="optional" style={fieldStyle} />
+        </Field>
+      </Row>
+      <Row>
+        <Field label="Barrel length" hint="Optional">
+          <UnitInput value={barrel} onChange={setBarrel} unit={barrelUnit} onUnit={setBarrelUnit} units={["in", "cm"]} placeholder="e.g. 27.5" />
+        </Field>
+        <Field label="Regulated?">
+          <div style={{ display: "flex", alignItems: "center", height: 40 }}>
+            <Toggle
+              on={reg}
+              onClick={() => {
+                const next = !reg;
+                setReg(next);
+                if (!next) setTanks((ts) => ts.map((t) => (t.role === "working" ? { ...t, role: "reservoir" } : t)));
+              }}
+              onLabel="Regulated"
+              offLabel="Unregulated"
+            />
+          </div>
+        </Field>
+      </Row>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 8 }}>
+        <SmallToggle value={pressUnit} onChange={setPressUnit} options={["psi", "bar"]} />
+      </div>
+      {reg && (
+        <Field label="Regulator pressure" hint="Optional — factory setpoint">
+          <input
+            type="number"
+            inputMode="decimal"
+            value={regPsi}
+            onChange={(e) => setRegPsi(e.target.value)}
+            placeholder={`optional (${pressUnit})`}
+            className="mono"
+            style={fieldStyle}
+          />
+        </Field>
+      )}
+      <div className="mono" style={{ fontSize: 12, letterSpacing: 1, color: "#5e7170", textTransform: "uppercase", margin: "2px 0 10px" }}>
+        Tank(s) — bottle volume powers the air-efficiency math
+      </div>
+      {tanks.map((t, i) => (
+        <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-end", marginBottom: 10 }}>
+          <div style={{ flex: 1 }}>
+            <Row>
+              <Field label="Volume (cc)">
+                <input type="number" inputMode="decimal" value={t.vol} onChange={(e) => setTankRow(i, { vol: e.target.value })} placeholder="e.g. 580" className="mono" style={fieldStyle} />
+              </Field>
+              <Field label="Role">
+                <select value={t.role} onChange={(e) => setTankRow(i, { role: e.target.value })} disabled={!reg} style={fieldStyle}>
+                  {tankRoleOptions(reg).map((o) => (
+                    <option key={o.value} value={o.value}>{o.label}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field label={`Rated fill (${pressUnit})`}>
+                <input type="number" inputMode="decimal" value={t.rated} onChange={(e) => setTankRow(i, { rated: e.target.value })} placeholder="optional" className="mono" style={fieldStyle} />
+              </Field>
+            </Row>
+          </div>
+          {tanks.length > 1 && (
+            <button
+              type="button"
+              onClick={() => setTanks((ts) => ts.filter((_, j) => j !== i))}
+              style={{ ...ghostBtn, padding: "9px 12px", fontSize: 12, marginBottom: 16, color: "#c98a8a" }}
+            >
+              Remove
+            </button>
+          )}
+        </div>
+      ))}
+      <button
+        type="button"
+        onClick={() => setTanks((ts) => [...ts, emptyTankRow()])}
+        className="mono"
+        style={{ background: "none", border: "1px dashed #2a2f36", borderRadius: 4, color: TEAL, padding: "7px 12px", fontSize: 12, cursor: "pointer", marginBottom: 12 }}
+      >
+        + Add another tank
+      </button>
+    </CreateBox>
+  );
+}
+
+// Brand picker with an inline "new brand" escape hatch — used by the suppressor
+// and projectile forms, whose brands may be missing too.
+function BrandPick({ brands, value, onChange, newName, onNewName }) {
+  return (
+    <Field label="Brand" required>
+      <select value={value} onChange={(e) => onChange(e.target.value)} style={fieldStyle}>
+        <option value="">Select brand…</option>
+        {brands.map((b) => (
+          <option key={b.id} value={b.id}>{b.name}</option>
+        ))}
+        <option value="__new">+ New brand…</option>
+      </select>
+      {value === "__new" && (
+        <input
+          value={newName}
+          onChange={(e) => onNewName(e.target.value)}
+          placeholder="New brand name"
+          style={{ ...fieldStyle, marginTop: 8 }}
+          autoFocus
+        />
+      )}
+    </Field>
+  );
+}
+
+// Resolve a BrandPick selection to a brand id, creating the brand first when
+// the user typed a new one. Returns { brandId } or { error }.
+async function resolveBrand(brandChoice, newBrandName) {
+  if (brandChoice === "__new") {
+    const nm = newBrandName.trim();
+    if (!nm) return { error: "Enter the new brand's name." };
+    const res = await createBrand({ name: nm });
+    if (res.error) return { error: res.error };
+    return { brandId: Number(res.data.id) };
+  }
+  if (!brandChoice) return { error: "Pick the brand." };
+  return { brandId: Number(brandChoice) };
+}
+
+function NewModeratorForm({ brands, onDone, onCancel }) {
+  const [brandChoice, setBrandChoice] = useState("");
+  const [newBrand, setNewBrand] = useState("");
+  const [name, setName] = useState("");
+  const { busy, err, save } = useCreator(
+    () =>
+      name.trim()
+        ? async () => {
+            const b = await resolveBrand(brandChoice, newBrand);
+            if (b.error) return b;
+            return createModerator({ brandId: b.brandId, name: name.trim() });
+          }
+        : "Enter the suppressor's name.",
+    onDone
+  );
+  return (
+    <CreateBox title="New suppressor / moderator" onSave={save} onCancel={onCancel} busy={busy} err={err}>
+      <Row>
+        <BrandPick brands={brands} value={brandChoice} onChange={setBrandChoice} newName={newBrand} onNewName={setNewBrand} />
+        <Field label="Name" required>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Tanto" style={fieldStyle} />
+        </Field>
+      </Row>
+    </CreateBox>
+  );
+}
+
+function NewProjectileForm({ brands, caliberId, caliberName, onDone, onCancel }) {
+  const [brandChoice, setBrandChoice] = useState("");
+  const [newBrand, setNewBrand] = useState("");
+  const [name, setName] = useState("");
+  const [type, setType] = useState("pellet");
+  const [weight, setWeight] = useState("");
+  const [head, setHead] = useState("");
+  const { busy, err, save } = useCreator(
+    () => {
+      if (!name.trim()) return "Enter the pellet/slug name.";
+      if (!weight || Number(weight) <= 0) return "Enter the weight in grains.";
+      return async () => {
+        const b = await resolveBrand(brandChoice, newBrand);
+        if (b.error) return b;
+        return createProjectile({
+          brandId: b.brandId,
+          name: name.trim(),
+          type,
+          caliberId: Number(caliberId),
+          weightGrains: Number(weight),
+          headDiameterMm: head === "" ? null : Number(head),
+        });
+      };
+    },
+    onDone
+  );
+  return (
+    <CreateBox title={`New pellet / slug — ${caliberName}`} onSave={save} onCancel={onCancel} busy={busy} err={err}>
+      <Row>
+        <BrandPick brands={brands} value={brandChoice} onChange={setBrandChoice} newName={newBrand} onNewName={setNewBrand} />
+        <Field label="Name" required>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Hades" style={fieldStyle} />
+        </Field>
+      </Row>
+      <Row>
+        <Field label="Type" required>
+          <select value={type} onChange={(e) => setType(e.target.value)} style={fieldStyle}>
+            {["pellet", "slug", "round_ball"].map((x) => (
+              <option key={x} value={x}>{x}</option>
+            ))}
+          </select>
+        </Field>
+        <Field label="Weight (grains)" required>
+          <input type="number" inputMode="decimal" value={weight} onChange={(e) => setWeight(e.target.value)} placeholder="e.g. 25.4" className="mono" style={fieldStyle} />
+        </Field>
+        <Field label="Head dia (mm)" hint="Optional">
+          <input type="number" inputMode="decimal" value={head} onChange={(e) => setHead(e.target.value)} placeholder="optional" className="mono" style={fieldStyle} />
+        </Field>
+      </Row>
+    </CreateBox>
   );
 }
 

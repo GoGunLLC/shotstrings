@@ -19,9 +19,9 @@ This doc covers the technical design: the data model, the calculation logic, the
 | Decision | Choice |
 |---|---|
 | **Units** | Store one canonical unit per measurement; convert in the UI for US/metric users. |
-| **Moderation** | Submissions are `pending` → `approved`/`rejected`. Only approved show publicly. |
+| **Moderation** | **Publish-then-review** (mvp_15): submissions and user-created catalog entries insert as `approved` and are public immediately; `reviewed_at IS NULL` puts them in the admin review queue. Admins mark reviewed, edit, merge, or `reject` (unpublish) after the fact. A non-admin edit to a string clears `reviewed_at`, re-queueing it. |
 | **Accuracy** | Optional, in its own `targets` table. Room for an accuracy-rating system later. |
-| **Catalog** | Curated. Admins seed/approve guns, pellets, moderators. Users can *suggest* new entries. |
+| **Catalog** | Self-service with after-the-fact curation. Users create missing brands/models/variants/projectiles/moderators from the submit form; entries are live immediately and land in the admin review queue. Calibers stay admin-only reference data. |
 | **Ownership** | Anyone can submit from any video; real creators claim their *channel* to take control. Credit ≠ control (see §5). |
 
 ### Canonical storage units (UI converts for display)

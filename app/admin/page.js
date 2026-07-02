@@ -11,6 +11,9 @@ import {
   getCatalog,
   getAllSubmissions,
   setStringStatus,
+  markStringReviewed,
+  getCatalogReviewQueue,
+  markCatalogReviewed,
   deleteString,
   updateStringFull,
   addBrand,
@@ -68,10 +71,18 @@ const field = {
 };
 
 const STATUS_STYLE = {
-  approved: { color: TEAL, bg: "rgba(47,184,160,0.1)", border: "rgba(47,184,160,0.4)", label: "Approved" },
+  approved: { color: TEAL, bg: "rgba(47,184,160,0.1)", border: "rgba(47,184,160,0.4)", label: "Live" },
+  needs_review: { color: AMBER, bg: "rgba(224,169,63,0.1)", border: "rgba(224,169,63,0.4)", label: "Live · needs review" },
   pending: { color: AMBER, bg: "rgba(224,169,63,0.1)", border: "rgba(224,169,63,0.4)", label: "Pending" },
   rejected: { color: "#e24b4a", bg: "rgba(226,75,74,0.1)", border: "rgba(226,75,74,0.4)", label: "Rejected" },
 };
+
+// Badge for a submission row: live strings that haven't been reviewed get the
+// amber "needs review" treatment; everything else keys off status.
+function rowStatusStyle(r) {
+  if (r.status === "approved" && !r.reviewedAt) return STATUS_STYLE.needs_review;
+  return STATUS_STYLE[r.status] || STATUS_STYLE.pending;
+}
 
 export default function AdminPage() {
   const [profile, setProfile] = useState(undefined); // undefined=loading, null=signed out
@@ -177,7 +188,7 @@ function Shell({ children }) {
 // REVIEW QUEUE
 // ===========================================================================
 function ReviewQueue({ catalog }) {
-  const [filter, setFilter] = useState("pending");
+  const [filter, setFilter] = useState("needs_review");
   const [rows, setRows] = useState(null);
   const [editing, setEditing] = useState(null);
   const [msg, setMsg] = useState("");
@@ -198,8 +209,15 @@ function ReviewQueue({ catalog }) {
 
   return (
     <div>
+      <CatalogReviewQueue />
+
       <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
-        {["pending", "approved", "rejected", "all"].map((f) => (
+        {[
+          ["needs_review", "Needs review"],
+          ["reviewed", "Reviewed"],
+          ["rejected", "Rejected"],
+          ["all", "All"],
+        ].map(([f, label]) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
@@ -216,7 +234,7 @@ function ReviewQueue({ catalog }) {
               textTransform: "uppercase",
             }}
           >
-            {f}
+            {label}
           </button>
         ))}
       </div>
@@ -236,7 +254,7 @@ function ReviewQueue({ catalog }) {
 
       {rows &&
         rows.map((r) => {
-          const st = STATUS_STYLE[r.status] || STATUS_STYLE.pending;
+          const st = rowStatusStyle(r);
           const open = editing === r.id;
           return (
             <div key={r.id} style={{ border: "1px solid #181b1f", borderRadius: 8, marginBottom: 14, overflow: "hidden" }}>
@@ -278,13 +296,18 @@ function ReviewQueue({ catalog }) {
               </div>
 
               <div style={{ display: "flex", gap: 8, padding: "11px 18px", borderTop: "1px solid #141619", flexWrap: "wrap" }}>
+                {r.status === "approved" && !r.reviewedAt && (
+                  <ActBtn color={TEAL} onClick={() => act(r.id, () => markStringReviewed(r.id), "Marked reviewed.")}>
+                    Mark reviewed
+                  </ActBtn>
+                )}
                 {r.status !== "approved" && (
-                  <ActBtn color={TEAL} onClick={() => act(r.id, () => setStringStatus(r.id, "approved"), "Approved.")}>
-                    Approve
+                  <ActBtn color={TEAL} onClick={() => act(r.id, () => setStringStatus(r.id, "approved"), "Restored to live.")}>
+                    Restore (live)
                   </ActBtn>
                 )}
                 {r.status !== "rejected" && (
-                  <ActBtn color="#e24b4a" onClick={() => act(r.id, () => setStringStatus(r.id, "rejected"), "Rejected.")}>
+                  <ActBtn color="#e24b4a" onClick={() => act(r.id, () => setStringStatus(r.id, "rejected"), "Rejected — no longer public.")}>
                     Reject
                   </ActBtn>
                 )}
@@ -310,14 +333,74 @@ function ReviewQueue({ catalog }) {
                   onCancel={() => setEditing(null)}
                   onSaved={() => {
                     setEditing(null);
-                    setMsg("Saved.");
-                    load();
+                    // An admin fixing a submission has, by definition, reviewed it.
+                    markStringReviewed(r.id).then(() => {
+                      setMsg("Saved and marked reviewed.");
+                      load();
+                    });
                   }}
                 />
               )}
             </div>
           );
         })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Catalog review queue — user-created brands/models/variants/projectiles/
+// suppressors that are already live but haven't had an admin look yet. Fix-ups
+// (rename, merge, delete) happen in the Manage tab; this queue is the "seen it,
+// it's fine" checkbox.
+// ---------------------------------------------------------------------------
+function CatalogReviewQueue() {
+  const [rows, setRows] = useState(null);
+  const [msg, setMsg] = useState("");
+
+  function load() {
+    getCatalogReviewQueue().then((r) => setRows(r.rows || []));
+  }
+  useEffect(load, []);
+
+  if (rows === null || rows.length === 0) return null;
+
+  async function review(r) {
+    setMsg("");
+    const { error } = await markCatalogReviewed(r.kind, r.id);
+    if (error) return setMsg(error);
+    load();
+  }
+
+  return (
+    <div style={{ border: `1px solid rgba(224,169,63,0.35)`, borderRadius: 8, marginBottom: 22, overflow: "hidden" }}>
+      <div style={{ padding: "13px 18px", background: "rgba(224,169,63,0.06)", borderBottom: "1px solid rgba(224,169,63,0.2)" }}>
+        <span className="mono" style={{ fontSize: 12, letterSpacing: 1, color: AMBER, textTransform: "uppercase" }}>
+          New catalog entries · {rows.length} awaiting review
+        </span>
+        <span style={{ fontSize: 12.5, color: "#868d96", marginLeft: 10 }}>
+          Already live. Wrong or duplicate? Fix or merge it in the Manage tab, then mark it reviewed.
+        </span>
+      </div>
+      {msg && (
+        <div style={{ color: "#f0a0a0", fontSize: 13, padding: "8px 18px" }}>{msg}</div>
+      )}
+      {rows.map((r) => (
+        <div
+          key={`${r.kind}-${r.id}`}
+          style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 18px", borderTop: "1px solid #141619" }}
+        >
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>{r.label}</div>
+            <div className="mono" style={{ fontSize: 12, color: "#5e7170", marginTop: 2 }}>
+              {r.sub} · by {r.creator} · {new Date(r.createdAt).toLocaleDateString()}
+            </div>
+          </div>
+          <ActBtn color={TEAL} onClick={() => review(r)}>
+            Mark reviewed
+          </ActBtn>
+        </div>
+      ))}
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { getMyDashboard, getMyProfile, setMyUsername } from "../lib/catalog";
 const TEAL = "#2fb8a0";
 
 const STATUS_STYLE = {
-  approved: { color: "#2fb8a0", bg: "rgba(47,184,160,0.1)", border: "rgba(47,184,160,0.4)", label: "Approved" },
+  approved: { color: "#2fb8a0", bg: "rgba(47,184,160,0.1)", border: "rgba(47,184,160,0.4)", label: "Live" },
   pending: { color: "#e0a93f", bg: "rgba(224,169,63,0.1)", border: "rgba(224,169,63,0.4)", label: "Pending review" },
   rejected: { color: "#e24b4a", bg: "rgba(226,75,74,0.1)", border: "rgba(226,75,74,0.4)", label: "Rejected" },
 };
@@ -61,8 +61,8 @@ export default function DashboardPage() {
           >
             <h2 style={{ fontSize: 20, fontWeight: 800, letterSpacing: -0.5 }}>Sign in to view your dashboard</h2>
             <p style={{ color: "#868d96", fontSize: 14.5, lineHeight: 1.6, margin: "10px 0 20px" }}>
-              Your dashboard shows the videos and shot strings you've submitted, with their review
-              status.
+              Your dashboard shows the videos and shot strings you've submitted. Strings go live
+              the moment you submit them.
             </p>
             <button
               onClick={() =>
@@ -131,10 +131,9 @@ export default function DashboardPage() {
         />
 
         {/* Stat row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 14, marginBottom: 34 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14, marginBottom: 34 }}>
           <Stat label="Total strings" value={totals.strings} />
-          <Stat label="Approved" value={totals.approved} accent={TEAL} />
-          <Stat label="Pending" value={totals.pending} accent="#e0a93f" />
+          <Stat label="Live" value={totals.approved} accent={TEAL} />
         </div>
 
         {!data && (

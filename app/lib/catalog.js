@@ -299,6 +299,89 @@ export async function getMyDashboard(userId) {
 }
 
 // ===========================================================================
+// USER CATALOG CREATE (submit-form "add new" flows)
+// ===========================================================================
+// Users can create catalog entities they can't find. Rows insert as
+// status='approved' so they're usable (and public) immediately; the DB insert
+// trigger keeps reviewed_at null, which lands them in the admin review queue.
+
+async function userInsert(table, row, select = "id, name") {
+  const supabase = getSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not signed in." };
+  const { data, error } = await supabase
+    .from(table)
+    .insert({ ...row, status: "approved", created_by: user.id })
+    .select(select)
+    .single();
+  return { data, error: error?.message };
+}
+
+export function createBrand({ name }) {
+  return userInsert("brands", { name, slug: slugify(name) });
+}
+
+export function createModel({ brandId, name, powerPlant }) {
+  return userInsert("airgun_models", {
+    brand_id: brandId,
+    name,
+    power_plant: powerPlant,
+  });
+}
+
+export function createModerator({ brandId, name }) {
+  return userInsert("moderators", { brand_id: brandId, name });
+}
+
+export function createProjectile({ brandId, name, type, caliberId, weightGrains, headDiameterMm }) {
+  return userInsert("projectiles", {
+    brand_id: brandId,
+    name,
+    type,
+    caliber_id: caliberId,
+    weight_grains: weightGrains,
+    head_diameter_mm: headDiameterMm ?? null,
+  });
+}
+
+// Variant + its tank(s) in one call. Tanks are inserted after the variant; an
+// RLS policy allows tank inserts on variants the user created.
+export async function createVariant({ modelId, caliberId, name, barrelLengthIn, isRegulated, regPressurePsi, tanks }) {
+  const trimmedName = typeof name === "string" ? name.trim() : "";
+  const res = await userInsert(
+    "airgun_variants",
+    {
+      model_id: modelId,
+      caliber_id: caliberId,
+      name: trimmedName || null,
+      barrel_length_in: barrelLengthIn ?? null,
+      reg_pressure_psi: isRegulated ? regPressurePsi ?? null : null,
+      is_regulated: !!isRegulated,
+    },
+    "id"
+  );
+  if (res.error) return res;
+
+  const rows = (tanks || [])
+    .filter((t) => t && (t.volumeCc || t.ratedPressurePsi))
+    .map((t, i) => ({
+      variant_id: res.data.id,
+      role: t.role || "reservoir",
+      position: t.position || i + 1,
+      volume_cc: t.volumeCc ?? null,
+      rated_pressure_psi: t.ratedPressurePsi ?? null,
+    }));
+  if (rows.length) {
+    const supabase = getSupabaseClient();
+    const t = await supabase.from("airgun_tanks").insert(rows);
+    if (t.error) return { data: res.data, error: `Variant saved, tank(s) failed: ${t.error.message}` };
+  }
+  return res;
+}
+
+// ===========================================================================
 // ADMIN
 // ===========================================================================
 
@@ -338,12 +421,12 @@ export async function setMyUsername(newName) {
 // Full submission rows for the admin review queue. `filter` is a status or
 // "all". RLS already restricts this to admins (is_admin() in the SELECT policy),
 // but we surface a clear error if a non-admin somehow calls it.
-export async function getAllSubmissions(filter = "pending") {
+export async function getAllSubmissions(filter = "needs_review") {
   const supabase = getSupabaseClient();
   let q = supabase
     .from("shot_strings")
     .select(
-      `id, status, created_at, approved_at,
+      `id, status, created_at, approved_at, reviewed_at,
        airgun_variant_id, moderator_id, projectile_id, caliber_id,
        projectile_weight_grains, ran_regulated, reg_setpoint_psi,
        temperature_c, altitude_ft, chrono_distance_in,
@@ -360,7 +443,10 @@ export async function getAllSubmissions(filter = "pending") {
     )
     .order("created_at", { ascending: false });
 
-  if (filter && filter !== "all") q = q.eq("status", filter);
+  // Filters: needs_review (unreviewed, not rejected) / reviewed / rejected / all.
+  if (filter === "needs_review") q = q.is("reviewed_at", null).neq("status", "rejected");
+  else if (filter === "reviewed") q = q.not("reviewed_at", "is", null).neq("status", "rejected");
+  else if (filter && filter !== "all") q = q.eq("status", filter);
 
   const { data, error } = await q;
   if (error) return { rows: [], error: error.message };
@@ -370,6 +456,7 @@ export async function getAllSubmissions(filter = "pending") {
     status: s.status,
     createdAt: s.created_at,
     approvedAt: s.approved_at,
+    reviewedAt: s.reviewed_at,
     variantId: s.airgun_variant_id,
     moderatorId: s.moderator_id,
     projectileId: s.projectile_id,
@@ -409,9 +496,110 @@ export async function getAllSubmissions(filter = "pending") {
   return { rows };
 }
 
+// Changing a string's status is itself a review act, so the review flags are
+// stamped in the same write (approve-after-reject, reject, etc.).
 export async function setStringStatus(id, status) {
   const supabase = getSupabaseClient();
-  const { error } = await supabase.from("shot_strings").update({ status }).eq("id", id);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from("shot_strings")
+    .update({ status, reviewed_at: new Date().toISOString(), reviewed_by: user?.id ?? null })
+    .eq("id", id);
+  return { error: error?.message };
+}
+
+// Mark a submission reviewed without touching its status (the common case in
+// the publish-then-review flow: the data looks right, just clear the queue).
+export async function markStringReviewed(id) {
+  const supabase = getSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from("shot_strings")
+    .update({ reviewed_at: new Date().toISOString(), reviewed_by: user?.id ?? null })
+    .eq("id", id);
+  return { error: error?.message };
+}
+
+// ---------------------------------------------------------------------------
+// Catalog review queue — user-created entities awaiting an admin look. Rows
+// are already live; reviewing just confirms (or leads to a merge/edit in the
+// Manage tab). Returns a flat list newest-first.
+// ---------------------------------------------------------------------------
+export async function getCatalogReviewQueue() {
+  const supabase = getSupabaseClient();
+  const [brands, models, variants, projectiles, moderators] = await Promise.all([
+    supabase.from("brands").select("id, name, created_at, creator:profiles!brands_created_by_fkey ( username )").is("reviewed_at", null),
+    supabase
+      .from("airgun_models")
+      .select("id, name, power_plant, created_at, brand:brands ( name ), creator:profiles!airgun_models_created_by_fkey ( username )")
+      .is("reviewed_at", null),
+    supabase
+      .from("airgun_variants")
+      .select(
+        `id, name, barrel_length_in, is_regulated, created_at,
+         model:airgun_models ( name, brand:brands ( name ) ),
+         caliber:calibers ( name ),
+         creator:profiles!airgun_variants_created_by_fkey ( username )`
+      )
+      .is("reviewed_at", null),
+    supabase
+      .from("projectiles")
+      .select("id, name, type, weight_grains, created_at, brand:brands ( name ), caliber:calibers ( name ), creator:profiles!projectiles_created_by_fkey ( username )")
+      .is("reviewed_at", null),
+    supabase
+      .from("moderators")
+      .select("id, name, created_at, brand:brands ( name ), creator:profiles!moderators_created_by_fkey ( username )")
+      .is("reviewed_at", null),
+  ]);
+
+  const firstErr = [brands, models, variants, projectiles, moderators].find((r) => r.error);
+  if (firstErr) return { rows: [], error: firstErr.error.message };
+
+  const rows = [
+    ...(brands.data || []).map((r) => ({
+      kind: "brand", id: r.id, createdAt: r.created_at, creator: r.creator?.username ?? "—",
+      label: r.name, sub: "Brand",
+    })),
+    ...(models.data || []).map((r) => ({
+      kind: "model", id: r.id, createdAt: r.created_at, creator: r.creator?.username ?? "—",
+      label: `${r.brand?.name ? `${r.brand.name} ` : ""}${r.name}`, sub: `Model · ${r.power_plant}`,
+    })),
+    ...(variants.data || []).map((r) => ({
+      kind: "variant", id: r.id, createdAt: r.created_at, creator: r.creator?.username ?? "—",
+      label: `${r.model?.brand?.name ? `${r.model.brand.name} ` : ""}${r.model?.name ?? "?"} · ${r.caliber?.name ?? "?"}${
+        r.barrel_length_in ? ` · ${r.barrel_length_in}"` : ""
+      }${r.name ? ` · ${r.name}` : ""}`,
+      sub: `Variant · ${r.is_regulated ? "regulated" : "unregulated"}`,
+    })),
+    ...(projectiles.data || []).map((r) => ({
+      kind: "projectile", id: r.id, createdAt: r.created_at, creator: r.creator?.username ?? "—",
+      label: `${r.brand?.name ? `${r.brand.name} ` : ""}${r.name} · ${r.weight_grains} gr`,
+      sub: `Projectile · ${r.type} · ${r.caliber?.name ?? "?"}`,
+    })),
+    ...(moderators.data || []).map((r) => ({
+      kind: "moderator", id: r.id, createdAt: r.created_at, creator: r.creator?.username ?? "—",
+      label: `${r.brand?.name ? `${r.brand.name} ` : ""}${r.name}`, sub: "Suppressor",
+    })),
+  ].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  return { rows };
+}
+
+export async function markCatalogReviewed(kind, id) {
+  const table = TABLE_BY_KIND[kind];
+  if (!table) return { error: `Unknown record type ${kind}.` };
+  const supabase = getSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const { error } = await supabase
+    .from(table)
+    .update({ reviewed_at: new Date().toISOString(), reviewed_by: user?.id ?? null })
+    .eq("id", id);
   return { error: error?.message };
 }
 
