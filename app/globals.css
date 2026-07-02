@@ -52,6 +52,26 @@ input::placeholder {
   color: #06100e;
 }
 
+/* Deep-link focus flash — when the admin console is opened via a
+   ?focus=<kind>:<id> link (e.g. from a submission email), the targeted
+   moderation row briefly pulses amber so it's easy to spot. */
+.ss-flash {
+  animation: ss-flash 2.4s ease-out;
+  border-radius: 8px;
+}
+
+@keyframes ss-flash {
+  0%,
+  25% {
+    box-shadow: 0 0 0 2px rgba(224, 169, 63, 0.95), 0 0 24px rgba(224, 169, 63, 0.5);
+    background: rgba(224, 169, 63, 0.09);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(224, 169, 63, 0);
+    background: transparent;
+  }
+}
+
 /* Responsive nav: show the inline links on wide screens, collapse to a
    hamburger on narrow ones. */
 .nav-hamburger {

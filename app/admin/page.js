@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 import SiteNav from "../components/SiteNav";
 import ShotsEditor from "../components/ShotsEditor";
@@ -84,10 +85,66 @@ function rowStatusStyle(r) {
   return STATUS_STYLE[r.status] || STATUS_STYLE.pending;
 }
 
+// Scroll a moderation row into view and pulse it amber. Used to land the admin
+// on the exact item referenced by a ?focus=<kind>:<id> deep link (e.g. the
+// link in a "new submission" email). Retries briefly since the row may still
+// be mounting when the URL is read.
+function flashElement(elId, attempt = 0) {
+  if (typeof document === "undefined") return;
+  const el = document.getElementById(elId);
+  if (!el) {
+    if (attempt < 20) setTimeout(() => flashElement(elId, attempt + 1), 150);
+    return;
+  }
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.add("ss-flash");
+  setTimeout(() => el.classList.remove("ss-flash"), 2500);
+}
+
+// The admin console reads `tab` and `focus` from the URL, so it must live
+// inside a Suspense boundary (Next.js requirement for useSearchParams).
 export default function AdminPage() {
+  return (
+    <Suspense
+      fallback={
+        <Shell>
+          <div className="mono" style={{ color: "#5e7170", fontSize: 13 }}>
+            Loading…
+          </div>
+        </Shell>
+      }
+    >
+      <AdminConsole />
+    </Suspense>
+  );
+}
+
+function AdminConsole() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // `focus` is "<kind>:<id>", e.g. "shot_string:<uuid>" or "variant:<uuid>".
+  // Both moderation queues live under the Review tab, so any focus lands there.
+  const focus = searchParams.get("focus") || null;
+  const urlTab = searchParams.get("tab");
+
   const [profile, setProfile] = useState(undefined); // undefined=loading, null=signed out
-  const [tab, setTab] = useState("review");
+  const [tab, setTabState] = useState(() => {
+    if (focus) return "review";
+    return ["review", "catalog", "manage"].includes(urlTab) ? urlTab : "review";
+  });
   const [catalog, setCatalog] = useState(null);
+
+  // Keep the tab reflected in the URL so a given view is itself shareable, and
+  // clear a stale focus once the admin navigates away by hand.
+  function setTab(k) {
+    setTabState(k);
+    const params = new URLSearchParams(Array.from(searchParams.entries()));
+    params.set("tab", k);
+    params.delete("focus");
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+  }
 
   useEffect(() => {
     getMyProfile().then((p) => setProfile(p));
@@ -165,7 +222,7 @@ export default function AdminPage() {
       </div>
 
       {tab === "review" ? (
-        <ReviewQueue catalog={catalog} />
+        <ReviewQueue catalog={catalog} focus={focus} />
       ) : tab === "catalog" ? (
         <CatalogAdmin catalog={catalog} onChanged={reloadCatalog} />
       ) : (
@@ -187,8 +244,12 @@ function Shell({ children }) {
 // ===========================================================================
 // REVIEW QUEUE
 // ===========================================================================
-function ReviewQueue({ catalog }) {
-  const [filter, setFilter] = useState("needs_review");
+function ReviewQueue({ catalog, focus }) {
+  const focusIsString = !!focus && focus.startsWith("shot_string:");
+  const focusStringId = focusIsString ? focus.split(":")[1] : null;
+  // A deep-linked string could be in any state (pending / live / rejected), so
+  // start on "All" to guarantee the targeted row is in the list.
+  const [filter, setFilter] = useState(focusIsString ? "all" : "needs_review");
   const [rows, setRows] = useState(null);
   const [editing, setEditing] = useState(null);
   const [msg, setMsg] = useState("");
@@ -198,6 +259,11 @@ function ReviewQueue({ catalog }) {
     getAllSubmissions(filter).then((r) => setRows(r.rows || []));
   }
   useEffect(load, [filter]);
+
+  // Once rows are on screen, pulse the focused string.
+  useEffect(() => {
+    if (rows && focusStringId) flashElement(`sub-${focusStringId}`);
+  }, [rows, focusStringId]);
 
   async function act(id, fn, okMsg) {
     setMsg("");
@@ -209,7 +275,7 @@ function ReviewQueue({ catalog }) {
 
   return (
     <div>
-      <CatalogReviewQueue />
+      <CatalogReviewQueue focus={focus} />
 
       <div style={{ display: "flex", gap: 8, marginBottom: 18 }}>
         {[
@@ -257,7 +323,7 @@ function ReviewQueue({ catalog }) {
           const st = rowStatusStyle(r);
           const open = editing === r.id;
           return (
-            <div key={r.id} style={{ border: "1px solid #181b1f", borderRadius: 8, marginBottom: 14, overflow: "hidden" }}>
+            <div key={r.id} id={`sub-${r.id}`} style={{ border: "1px solid #181b1f", borderRadius: 8, marginBottom: 14, overflow: "hidden" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", background: "#0b0d10" }}>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: 14, fontWeight: 700 }}>
@@ -354,14 +420,24 @@ function ReviewQueue({ catalog }) {
 // (rename, merge, delete) happen in the Manage tab; this queue is the "seen it,
 // it's fine" checkbox.
 // ---------------------------------------------------------------------------
-function CatalogReviewQueue() {
+function CatalogReviewQueue({ focus }) {
   const [rows, setRows] = useState(null);
   const [msg, setMsg] = useState("");
+
+  // Focus for a catalog entry is "<kind>:<id>" where kind is anything but
+  // shot_string (brand / model / variant / projectile / moderator).
+  const catalogFocus = focus && !focus.startsWith("shot_string:") ? focus : null;
 
   function load() {
     getCatalogReviewQueue().then((r) => setRows(r.rows || []));
   }
   useEffect(load, []);
+
+  useEffect(() => {
+    if (!rows || !catalogFocus) return;
+    const [kind, id] = catalogFocus.split(":");
+    flashElement(`cat-${kind}-${id}`);
+  }, [rows, catalogFocus]);
 
   if (rows === null || rows.length === 0) return null;
 
@@ -388,6 +464,7 @@ function CatalogReviewQueue() {
       {rows.map((r) => (
         <div
           key={`${r.kind}-${r.id}`}
+          id={`cat-${r.kind}-${r.id}`}
           style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "10px 18px", borderTop: "1px solid #141619" }}
         >
           <div style={{ minWidth: 0 }}>
