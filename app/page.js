@@ -860,7 +860,7 @@ export default function Home() {
         <div
           style={{
             display: isMobile ? "block" : "grid",
-            gridTemplateColumns: isMobile ? undefined : "minmax(340px, 420px) 1fr",
+            gridTemplateColumns: isMobile ? undefined : "minmax(360px, 460px) 1fr",
             alignItems: "start",
           }}
         >
@@ -1340,7 +1340,7 @@ function Browse({ results, total, options, filters, setFilters, selected, onTogg
     <div
       style={{
         marginTop: rail ? 16 : 30,
-        maxWidth: rail ? "none" : 1200,
+        maxWidth: rail ? "none" : 1280,
         marginLeft: rail ? 0 : "auto",
         marginRight: rail ? 0 : "auto",
       }}
@@ -1465,7 +1465,7 @@ function Browse({ results, total, options, filters, setFilters, selected, onTogg
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: rail ? "1fr" : "repeat(auto-fill, minmax(300px, 1fr))",
+            gridTemplateColumns: rail ? "1fr" : "repeat(auto-fill, minmax(320px, 1fr))",
             gap: 14,
           }}
         >
